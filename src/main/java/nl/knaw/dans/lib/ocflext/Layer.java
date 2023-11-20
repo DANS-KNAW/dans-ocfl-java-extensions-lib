@@ -15,30 +15,41 @@
  */
 package nl.knaw.dans.lib.ocflext;
 
-import io.ocfl.core.storage.common.Listing;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
-import java.util.Set;
 
+/**
+ * <p>
+ * A layer is a collection of files and directories, that is intended to be stacked on top of other layers. Files in newer layers overwrite files in older layers with the same path. A layer can be
+ * backed by a staging directory or an archive file.
+ * </p>
+ * <p>
+ * A layer can be open, closing or closed:
+ * <ul>
+ * <li>"Open" means the layer is writable.</li>
+ * <li>"Closing" means the layer is no longer writable, but the backing archive file has not yet fully been written. It can also mean than the archive file is in the process of being recreated because of a delete operation. </li>
+ * <li>"Closed" means the layer is no longer writable and the backing file has been written.</li>
+ * </p>
+ */
 public interface Layer {
+    enum State {
+        OPEN, CLOSING, CLOSED
+    }
+
 
     /**
-     * Head layer only.
+     * Deletes the files pointed to by <code>paths</code>. If the layer is closed, the backing archive file is first unarchived to a staging directory, the files are deleted, and the archive is
+     * recreated. Not allowed if the layer is closing.
      *
-     * @param path
-     */
-    void createDirectories(String path) throws LayerNotWritableException, IOException;
-
-    /**
-     * Deletes the files pointed to by <code>paths</code>. If the layer is archived, the archive is first unarchived
-     * to a staging directory, the files are deleted, and the archive is recreated.
      * @param paths the paths of the files to be deleted
      */
     void deleteFiles(List<String> paths);
 
-    void archive();
+    /**
+     * Archives the layer and then closes it. The layer is no longer writable after closing.
+     */
+    void close();
 
-    InputStream read(String filePath);
+
 }

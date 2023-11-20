@@ -17,26 +17,47 @@ package nl.knaw.dans.lib.ocflext;
 
 import io.ocfl.core.storage.common.Listing;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.List;
 
 /**
- * Provides methods for managing layers that are part of a layered storage. The layers are ordered from top to bottom, where the top layer is the most recent layer.
- * Only the top layer is writable. The other layers are read-only, except that files can be deleted from them.
+ * Provides methods for managing layers that are part of a layered storage. The layers are ordered from top to bottom, where the top layer is the most recent layer. Only the top layer is writable. The
+ * other layers are read-only, except that files can be deleted from them.
  */
 public interface LayerManager {
+    /**
+     * Closes the current top layer and creates a new top layer. The old top layer becomes read-only and will be closed. The closing does <em>not</em> have to be done synchronously.
+     *
+     */
+    void openNewTopLayer();
+
 
     /**
-     * @return the top layer
+     * Creates the directories pointed to by <code>path</code>. The directories are created in the top layer.
+     *
+     * @param path the path of the directories to be created
+     * @throws LayerNotWritableException if the layer is not writable, i.e. if it is not the top layer
+     * @throws IOException               if an I/O error occurs
      */
-    Layer getTopLayer();
+    void createDirectories(String path) throws LayerNotWritableException, IOException;
 
     /**
-     * Archives the current top layer and creates a new top layer.
+     * Writes the given content to the file pointed to by <code>filePath</code>. The file is created in the top layer.
+     *
+     * @param filePath  the path of the file to be written
+     * @param content   the content to be written
+     * @throws LayerNotWritableException if the layer is not writable, i.e. if it is not the top layer
+     * @throws IOException               if an I/O error occurs
      */
-    void newTopLayer();
+//    void write(String filePath, byte[] content, String mediaType) throws LayerNotWritableException, IOException;
 
 
-    Layer findHighestLayerContaining(String path);
+    void write(String filePath, InputStream content) throws LayerNotWritableException, IOException;
+
+
+    InputStream read(String filePath) throws IOException;
 
     /**
      * Finds all the layers that contain the given path.
@@ -47,7 +68,6 @@ public interface LayerManager {
     List<Layer> findLayersContaining(String path);
 
     List<Listing> listDirectory(String directoryPath);
-
 
     List<Listing> listRecursive(String directoryPath);
 

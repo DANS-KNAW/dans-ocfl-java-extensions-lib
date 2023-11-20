@@ -12,4 +12,8 @@ public interface LayerDatabase {
     Set<Listing> listRecursive(String directoryPath);
 
     void addDirectory(String id, String path);
+
+    void addFile(String id, String filePath, String mediaType);
+
+    void delete(String id, String path);
 }

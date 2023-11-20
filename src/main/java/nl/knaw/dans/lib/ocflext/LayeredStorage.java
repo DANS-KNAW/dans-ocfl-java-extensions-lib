@@ -21,9 +21,10 @@ import io.ocfl.core.storage.common.Listing;
 import io.ocfl.core.storage.common.OcflObjectRootDirIterator;
 import io.ocfl.core.storage.common.Storage;
 import lombok.SneakyThrows;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
@@ -39,11 +40,9 @@ import java.util.Set;
 public class LayeredStorage implements Storage {
     private LayerManager layerManager;
 
-
-    public synchronized void openNewTopLayer() {
-        layerManager.newTopLayer();
+    public void openNewTopLayer() {
+        layerManager.openNewTopLayer();
     }
-
 
     @Override
     public List<Listing> listDirectory(String directoryPath) {
@@ -70,9 +69,10 @@ public class LayeredStorage implements Storage {
         return layerManager.fileExists(filePath);
     }
 
+    @SneakyThrows
     @Override
     public InputStream read(String filePath) {
-        return layerManager.findHighestLayerContaining(filePath).read(filePath);
+        return layerManager.read(filePath);
     }
 
     @SneakyThrows
@@ -88,15 +88,17 @@ public class LayeredStorage implements Storage {
         return null;
     }
 
-    @Override
-    public synchronized void write(String filePath, byte[] content, String mediaType) {
 
+    @SneakyThrows
+    @Override
+    public void write(String filePath, byte[] content, String mediaType) {
+        layerManager.write(filePath, new ByteArrayInputStream(content));
     }
 
     @SneakyThrows
     @Override
-    public synchronized void createDirectories(String path) {
-        layerManager.getTopLayer().createDirectories(path);
+    public void createDirectories(String path) {
+        layerManager.createDirectories(path);
     }
 
     @Override
@@ -104,14 +106,20 @@ public class LayeredStorage implements Storage {
 
     }
 
+    @SneakyThrows
     @Override
     public void copyFileInto(Path source, String destination, String mediaType) {
-
+        try(InputStream is = FileUtils.openInputStream(source.toFile())) {
+            layerManager.write(destination, is);
+        }
     }
 
+    @SneakyThrows
     @Override
     public void copyFileInternal(String sourceFile, String destinationFile) {
-
+        try(InputStream is = layerManager.read(sourceFile)) {
+            layerManager.write(destinationFile, is);
+        }
     }
 
     @Override
