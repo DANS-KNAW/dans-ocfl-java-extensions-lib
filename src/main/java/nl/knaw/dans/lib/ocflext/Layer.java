@@ -15,5 +15,30 @@
  */
 package nl.knaw.dans.lib.ocflext;
 
+import io.ocfl.core.storage.common.Listing;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
+import java.util.Set;
+
 public interface Layer {
+
+    /**
+     * Head layer only.
+     *
+     * @param path
+     */
+    void createDirectories(String path) throws LayerNotWritableException, IOException;
+
+    /**
+     * Deletes the files pointed to by <code>paths</code>. If the layer is archived, the archive is first unarchived
+     * to a staging directory, the files are deleted, and the archive is recreated.
+     * @param paths the paths of the files to be deleted
+     */
+    void deleteFiles(List<String> paths);
+
+    void archive();
+
+    InputStream read(String filePath);
 }

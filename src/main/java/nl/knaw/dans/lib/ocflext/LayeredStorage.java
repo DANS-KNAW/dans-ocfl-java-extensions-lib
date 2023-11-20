@@ -20,26 +20,44 @@ import io.ocfl.api.model.DigestAlgorithm;
 import io.ocfl.core.storage.common.Listing;
 import io.ocfl.core.storage.common.OcflObjectRootDirIterator;
 import io.ocfl.core.storage.common.Storage;
+import lombok.SneakyThrows;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.InputStream;
+import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class LayeredStorage implements Storage {
+    private LayerManager layerManager;
+
+
+    public synchronized void openNewTopLayer() {
+        layerManager.newTopLayer();
+    }
+
+
     @Override
     public List<Listing> listDirectory(String directoryPath) {
-        return null;
+        return layerManager.listDirectory(directoryPath);
     }
 
     @Override
     public List<Listing> listRecursive(String directoryPath) {
-        return null;
+        return layerManager.listRecursive(directoryPath);
     }
 
     @Override
     public boolean directoryIsEmpty(String directoryPath) {
-        return false;
+        return listDirectory(directoryPath).isEmpty();
     }
 
     @Override
@@ -49,17 +67,20 @@ public class LayeredStorage implements Storage {
 
     @Override
     public boolean fileExists(String filePath) {
-        return false;
+        return layerManager.fileExists(filePath);
     }
 
     @Override
     public InputStream read(String filePath) {
-        return null;
+        return layerManager.findHighestLayerContaining(filePath).read(filePath);
     }
 
+    @SneakyThrows
     @Override
     public String readToString(String filePath) {
-        return null;
+        StringWriter writer = new StringWriter();
+        IOUtils.copy(read(filePath), writer, StandardCharsets.UTF_8);
+        return writer.toString();
     }
 
     @Override
@@ -68,13 +89,14 @@ public class LayeredStorage implements Storage {
     }
 
     @Override
-    public void write(String filePath, byte[] content, String mediaType) {
+    public synchronized void write(String filePath, byte[] content, String mediaType) {
 
     }
 
+    @SneakyThrows
     @Override
-    public void createDirectories(String path) {
-
+    public synchronized void createDirectories(String path) {
+        layerManager.getTopLayer().createDirectories(path);
     }
 
     @Override
@@ -109,12 +131,24 @@ public class LayeredStorage implements Storage {
 
     @Override
     public void deleteFile(String path) {
-
+        List<Layer> layers = layerManager.findLayersContaining(path);
+        for (Layer layer : layers) {
+            layer.deleteFiles(List.of(path));
+        }
     }
 
     @Override
     public void deleteFiles(Collection<String> paths) {
-
+        Map<Layer, Set<String>> layerPaths = new HashMap<>();
+        for (String path : paths) {
+            var layers = layerManager.findLayersContaining(path);
+            for (Layer layer : layers) {
+                layerPaths.computeIfAbsent(layer, k -> new HashSet<>()).add(path);
+            }
+        }
+        for (Map.Entry<Layer, Set<String>> entry : layerPaths.entrySet()) {
+            entry.getKey().deleteFiles(new ArrayList<>(entry.getValue()));
+        }
     }
 
     @Override

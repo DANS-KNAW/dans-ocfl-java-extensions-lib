@@ -15,5 +15,42 @@
  */
 package nl.knaw.dans.lib.ocflext;
 
+import io.ocfl.core.storage.common.Listing;
+
+import java.util.List;
+
+/**
+ * Provides methods for managing layers that are part of a layered storage. The layers are ordered from top to bottom, where the top layer is the most recent layer.
+ * Only the top layer is writable. The other layers are read-only, except that files can be deleted from them.
+ */
 public interface LayerManager {
+
+    /**
+     * @return the top layer
+     */
+    Layer getTopLayer();
+
+    /**
+     * Archives the current top layer and creates a new top layer.
+     */
+    void newTopLayer();
+
+
+    Layer findHighestLayerContaining(String path);
+
+    /**
+     * Finds all the layers that contain the given path.
+     *
+     * @param path path relative to the root of the storage
+     * @return the layers that contain the given path
+     */
+    List<Layer> findLayersContaining(String path);
+
+    List<Listing> listDirectory(String directoryPath);
+
+
+    List<Listing> listRecursive(String directoryPath);
+
+    boolean fileExists(String filePath);
+
 }
