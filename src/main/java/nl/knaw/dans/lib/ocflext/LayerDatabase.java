@@ -13,7 +13,7 @@ public interface LayerDatabase {
 
     void addDirectory(String id, String path);
 
-    void addFile(String id, String filePath, String mediaType);
+    void addFile(String id, String filePath);
 
     void delete(String id, String path);
 }

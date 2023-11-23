@@ -1,89 +1,122 @@
 package nl.knaw.dans.lib.ocflext;
 
-import org.apache.commons.io.FileUtils;
+import lombok.SneakyThrows;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 
 class LayerImpl implements Layer {
     private final String id;
     private final LayerDatabase layerDatabase;
     private final Path stagingDir;
     private final Archive archive;
-    private State state;
+    private final MultiLock writeLocks = new MultiLock();
+
+    private final MultiLock readLocks = new MultiLock();
+
+    private boolean isClosed = false;
+
+    private boolean isArchived = false;
+
+    private ExecutorService executorService;
 
     LayerImpl(String id, LayerDatabase layerDatabase, Path stagingDir, Archive archive) {
         this.id = id;
         this.layerDatabase = layerDatabase;
         this.stagingDir = stagingDir;
         this.archive = archive;
-        this.state = State.OPEN;
     }
 
+    @SneakyThrows
     void createDirectories(String path) {
-        checkStateForWriting();
-
+        checkOpen();
+        writeLocks.incrementLock();
+        try {
+            Files.createDirectories(stagingDir.resolve(path));
+            layerDatabase.addDirectory(id, path);
+        }
+        finally {
+            writeLocks.decrementLock();
+        }
     }
 
+    @SneakyThrows
     void write(String filePath, InputStream content) {
-        checkStateForWriting();
-
+        checkOpen();
+        writeLocks.incrementLock();
+        try {
+            Files.copy(content, stagingDir.resolve(filePath));
+            layerDatabase.addFile(id, filePath);
+        }
+        finally {
+            writeLocks.decrementLock();
+        }
     }
 
-    private void checkStateForWriting() {
-        if (state == State.CLOSED || state == State.CLOSING) {
-            throw new IllegalStateException(String.format("Layer in invalid state for writing %s", state));
+    private synchronized void checkOpen() {
+        if (isClosed) {
+            throw new IllegalStateException("Layer is closed");
+        }
+    }
+
+    private synchronized void checkClosed() {
+        if (!isClosed) {
+            throw new IllegalStateException("Layer is not closed");
+        }
+    }
+
+    private synchronized void checkUnarchived() {
+        if (isArchived) {
+            throw new IllegalStateException("Layer is already archived");
         }
     }
 
     @Override
     public void deleteFiles(List<String> paths) {
-        if (state == State.CLOSED) {
-            archive.unarchiveTo(stagingDir);
-            for (String path : paths) {
-                try {
-                    Files.delete(stagingDir.resolve(path));
-                    layerDatabase.delete(id, path);
-                }
-                catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
+    }
+
+    @Override
+    public synchronized void close() {
+        isClosed = true;
+    }
+
+    @SneakyThrows
+    public synchronized void archive() {
+        checkClosed();
+        checkUnarchived();
+        try {
+            writeLocks.acquire();
             archive.archiveFrom(stagingDir);
-        }
-        else if (state == State.OPEN) {
-            for (String path : paths) {
+            isArchived = true;
+            executorService.submit(() -> {
+                /* All new reads should be done from the archive. However, reads may still be in progress. We need to wait for them to finish,
+                 * before we can delete the staging directory. This can be done asynchronously, because the archive is immutable.
+                 */
                 try {
-                    Files.delete(stagingDir.resolve(path));
-                    layerDatabase.delete(id, path);
+                    readLocks.acquire();
+                    Files.delete(stagingDir);
                 }
-                catch (IOException e) {
-                    throw new RuntimeException(e);
+                finally {
+                    readLocks.release();
                 }
-            }
+            });
         }
-        else {
-            throw new IllegalStateException(String.format("Layer in invalid state for deleting %s", state));
+        finally {
+            writeLocks.release();
         }
     }
 
     @Override
-    public void close() {
-        state = State.CLOSING;
-        archive.archiveFrom(stagingDir);
-        FileUtils.deleteQuietly(stagingDir.toFile());
-        state = State.CLOSED;
-    }
-
-    InputStream read(String filePath) throws IOException {
-        if (state == State.CLOSED) {
+    public InputStream read(String filePath) throws IOException {
+        if (isArchived) {
             return archive.read(filePath);
         }
         else {
-            return Files.newInputStream(stagingDir.resolve(filePath));
+            return new CloseNotifyingInputStream(Files.newInputStream(stagingDir.resolve(filePath)), readLocks::decrementLock);
         }
     }
 }

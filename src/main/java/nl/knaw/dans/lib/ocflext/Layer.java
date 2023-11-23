@@ -37,7 +37,6 @@ public interface Layer {
         OPEN, CLOSING, CLOSED
     }
 
-
     /**
      * Deletes the files pointed to by <code>paths</code>. If the layer is closed, the backing archive file is first unarchived to a staging directory, the files are deleted, and the archive is
      * recreated. Not allowed if the layer is closing.
@@ -46,10 +45,17 @@ public interface Layer {
      */
     void deleteFiles(List<String> paths);
 
+
+    InputStream read(String path) throws IOException;
+
     /**
-     * Archives the layer and then closes it. The layer is no longer writable after closing.
+     * Archives the layer and then closes it. Pending writes must still be allowed to finish, before the layer may be archived.
      */
     void close();
 
+    /**
+     * Turns the layer into an archive file. This is only allowed if the layer is closed
+     */
+    void archive();
 
 }
