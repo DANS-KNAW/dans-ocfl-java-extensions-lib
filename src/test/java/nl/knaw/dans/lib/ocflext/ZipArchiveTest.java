@@ -15,8 +15,21 @@
  */
 package nl.knaw.dans.lib.ocflext;
 
-public class LayerNotWritableException extends Exception {
-    public LayerNotWritableException(String message) {
-        super(message);
+import org.junit.jupiter.api.Test;
+
+import java.nio.file.Path;
+
+public class ZipArchiveTest extends AbstractTestWithTestDir {
+
+
+    @Test
+    public void archiveFrom_should_create_zipfile() {
+        ZipArchive zipArchive = new ZipArchive(testDir.resolve("test.zip"));
+        zipArchive.archiveFrom(Path.of("src/test/resources/test-input/test-zip"));
+
+
     }
+
+
+
 }

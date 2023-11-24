@@ -43,16 +43,6 @@ public interface LayerManager {
      */
     void createDirectories(String path) throws LayerNotWritableException, IOException;
 
-    /**
-     * Writes the given content to the file pointed to by <code>filePath</code>. The file is created in the top layer.
-     *
-     * @param filePath  the path of the file to be written
-     * @param content   the content to be written
-     * @throws LayerNotWritableException if the layer is not writable, i.e. if it is not the top layer
-     * @throws IOException               if an I/O error occurs
-     */
-//    void write(String filePath, byte[] content, String mediaType) throws LayerNotWritableException, IOException;
-
 
     void write(String filePath, InputStream content) throws LayerNotWritableException, IOException;
 

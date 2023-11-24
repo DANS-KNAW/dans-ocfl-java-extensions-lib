@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2023 DANS - Data Archiving and Networked Services (info@dans.knaw.nl)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package nl.knaw.dans.lib.ocflext;
 
 import io.ocfl.core.storage.common.Listing;
@@ -24,14 +39,10 @@ public class LayerManagerImpl implements LayerManager {
         if (topLayer != null) {
             topLayer.close();
         }
-        var id = createId();
-        topLayer = new LayerImpl(id, layerDatabase, stagingRoot.resolve(id), new ZipArchive(archiveRoot.resolve(id + ".zip")));
+        var id = System.currentTimeMillis();
+        topLayer = new LayerImpl(id, layerDatabase, stagingRoot.resolve(Long.toString(id)), new ZipArchive(archiveRoot.resolve(id + ".zip")));
     }
 
-    private static String createId() {
-        // TODO: make sure that system time is always the same length
-        return System.currentTimeMillis() + "-" + UUID.randomUUID();
-    }
 
     @Override
     public synchronized void createDirectories(String path) throws LayerNotWritableException, IOException {

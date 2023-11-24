@@ -26,16 +26,15 @@ import java.util.List;
  * </p>
  * <p>
  * A layer can be open, closing or closed:
+ * </p>
  * <ul>
  * <li>"Open" means the layer is writable.</li>
  * <li>"Closing" means the layer is no longer writable, but the backing archive file has not yet fully been written. It can also mean than the archive file is in the process of being recreated because of a delete operation. </li>
  * <li>"Closed" means the layer is no longer writable and the backing file has been written.</li>
- * </p>
+ * </ul>
  */
 public interface Layer {
-    enum State {
-        OPEN, CLOSING, CLOSED
-    }
+    void createDirectories(String path) throws LayerNotWritableException, IOException;
 
     /**
      * Deletes the files pointed to by <code>paths</code>. If the layer is closed, the backing archive file is first unarchived to a staging directory, the files are deleted, and the archive is
@@ -45,17 +44,17 @@ public interface Layer {
      */
     void deleteFiles(List<String> paths);
 
-
     InputStream read(String path) throws IOException;
 
     /**
-     * Archives the layer and then closes it. Pending writes must still be allowed to finish, before the layer may be archived.
+     * Changes the state of the layer to closed. This blocks new write operations from starting.
      */
     void close();
 
     /**
-     * Turns the layer into an archive file. This is only allowed if the layer is closed
+     * Turns the layer into an archive file. This is only allowed if the layer is closed and not already archived. This method will first wait for pending write operations to finish.
      */
     void archive();
 
+    void write(String filePath, InputStream content) throws LayerNotWritableException, IOException;
 }
