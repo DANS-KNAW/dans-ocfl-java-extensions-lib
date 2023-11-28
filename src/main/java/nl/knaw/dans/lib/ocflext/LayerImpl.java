@@ -15,7 +15,9 @@
  */
 package nl.knaw.dans.lib.ocflext;
 
-import lombok.SneakyThrows;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.FileUtils;
 
 import java.io.IOException;
@@ -23,114 +25,77 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.UUID;
 
+@RequiredArgsConstructor
 class LayerImpl implements Layer {
-    private final long id;
-    private final LayerDatabase layerDatabase;
-    private final Path workDir;
 
+    @NonNull
+    @Getter
+    private final long id;
+
+    @NonNull
     private final Path stagingDir;
 
-    private final Path mutationTokenDir;
+    @NonNull
     private final Archive archive;
 
-    @SneakyThrows
-    LayerImpl(long id, LayerDatabase layerDatabase, Path workDir, Archive archive) {
-        this.id = id;
-        this.layerDatabase = layerDatabase;
-        this.archive = archive;
-        this.workDir = Files.createDirectories(workDir);
-        this.stagingDir = Files.createDirectory(workDir.resolve("ocfl-staging"));
-        this.mutationTokenDir = Files.createDirectory(workDir.resolve("mutation-tokens"));
-    }
+    @Getter
+    private boolean closed = false;
 
-    private boolean isArchived() {
-        return archive.isArchived();
-    }
-
-    private boolean isClosed() {
-        return isArchived() || Files.exists(workDir.resolve("closed"));
-    }
-
-    @SneakyThrows
-    private boolean isMutating() {
-        return !isArchived() && Files.exists(mutationTokenDir) && !FileUtils.listFiles(mutationTokenDir.toFile(), null, false).isEmpty();
-    }
-
-    @SneakyThrows(value = IOException.class)
-    private String startMutation() throws LayerNotWritableException {
-        if (isClosed()) {
-            throw new LayerNotWritableException("Layer is closed");
-        }
-        String mutationToken = UUID.randomUUID().toString();
-        Files.createFile(mutationTokenDir.resolve(mutationToken));
-        return mutationToken;
-    }
-
-    @SneakyThrows
-    private void endMutation(String mutationToken) throws LayerNotWritableException {
-        Files.delete(mutationTokenDir.resolve(mutationToken));
+    @Override
+    public void createDirectories(String path) throws IOException {
+        Files.createDirectories(stagingDir.resolve(path));
     }
 
     @Override
-    public void createDirectories(String path) throws LayerNotWritableException, IOException {
-        var mutationToken = startMutation();
-        try {
-            Files.createDirectories(stagingDir.resolve(path));
-            layerDatabase.addDirectory(id, path);
-        }
-        finally {
-            endMutation(mutationToken);
-        }
+    public Long getId() {
+        return null;
     }
 
     @Override
-    public void write(String filePath, InputStream content) throws LayerNotWritableException, IOException {
-        var mutationToken = startMutation();
-        try {
-            Files.copy(content, stagingDir.resolve(filePath));
-            layerDatabase.addFile(id, filePath);
+    public void deleteFiles(List<String> paths) throws IOException {
+        for (String path : paths) {
+            Files.delete(stagingDir.resolve(path));
         }
-        finally {
-            endMutation(mutationToken);
-        }
-    }
-
-    @Override
-    public void deleteFiles(List<String> paths) {
-
     }
 
     @Override
     public InputStream read(String path) throws IOException {
-        if (isArchived()) {
-            return archive.read(path);
-        }
-        else {
-            return Files.newInputStream(stagingDir.resolve(path));
-        }
+        return Files.newInputStream(stagingDir.resolve(path));
     }
 
     @Override
-    @SneakyThrows
     public void close() {
-        Files.createFile(workDir.resolve("closed"));
+        closed = true;
     }
 
     @Override
-    @SneakyThrows
     public void archive() {
-        if (isArchived()) {
-            throw new IllegalStateException("Layer is already archived");
-        }
-        if (!isClosed()) {
-            throw new IllegalStateException("Layer is not closed");
-        }
-        if (isMutating()) {
-            throw new IllegalStateException("Layer has pending mutations");
-        }
         archive.archiveFrom(stagingDir);
-        FileUtils.deleteDirectory(stagingDir.toFile());
+    }
+
+    @Override
+    public void write(String filePath, InputStream content) throws IOException {
+        Files.copy(content, stagingDir.resolve(filePath));
+    }
+
+    @Override
+    public void moveDirectoryInto(Path source, String destination) throws IOException {
+        Files.move(source, stagingDir.resolve(destination));
+    }
+
+    @Override
+    public boolean fileExists(String path) throws IOException {
+        return Files.exists(stagingDir.resolve(path));
+    }
+
+    @Override
+    public void moveDirectoryInternal(String source, String destination) throws IOException {
+        Files.move(stagingDir.resolve(source), stagingDir.resolve(destination));
+    }
+
+    @Override
+    public void deleteDirectory(String path) throws IOException {
+        FileUtils.deleteDirectory(stagingDir.resolve(path).toFile());
     }
 }

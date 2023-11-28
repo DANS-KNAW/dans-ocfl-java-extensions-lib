@@ -19,48 +19,24 @@ import io.ocfl.core.storage.common.Listing;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.List;
 
 /**
- * Provides methods for managing layers that are part of a layered storage. The layers are ordered from top to bottom, where the top layer is the most recent layer. Only the top layer is writable. The
- * other layers are read-only, except that files can be deleted from them.
+ * Manages {@link Layer}s.
  */
 public interface LayerManager {
     /**
-     * Closes the current top layer and creates a new top layer. The old top layer becomes read-only and will be closed. The closing does <em>not</em> have to be done synchronously.
-     *
+     * Closes the current top layer and creates a new top layer. The old top layer becomes read-only and will be closed.
      */
-    void openNewTopLayer();
+    void newTopLayer();
 
+    Layer getTopLayer();
 
     /**
-     * Creates the directories pointed to by <code>path</code>. The directories are created in the top layer.
+     * Returns the layer with the given id.
      *
-     * @param path the path of the directories to be created
-     * @throws LayerNotWritableException if the layer is not writable, i.e. if it is not the top layer
-     * @throws IOException               if an I/O error occurs
+     * @param id the id of the layer
+     * @return the layer
      */
-    void createDirectories(String path) throws LayerNotWritableException, IOException;
-
-
-    void write(String filePath, InputStream content) throws LayerNotWritableException, IOException;
-
-
-    InputStream read(String filePath) throws IOException;
-
-    /**
-     * Finds all the layers that contain the given path.
-     *
-     * @param path path relative to the root of the storage
-     * @return the layers that contain the given path
-     */
-    List<Layer> findLayersContaining(String path);
-
-    List<Listing> listDirectory(String directoryPath);
-
-    List<Listing> listRecursive(String directoryPath);
-
-    boolean fileExists(String filePath);
-
+    Layer getLayer(long id);
 }

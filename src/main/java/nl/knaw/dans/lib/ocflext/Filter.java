@@ -15,8 +15,6 @@
  */
 package nl.knaw.dans.lib.ocflext;
 
-public class LayerNotWritableException extends Exception {
-    public LayerNotWritableException(String message) {
-        super(message);
-    }
+public interface Filter<T> {
+    boolean accept(T t);
 }

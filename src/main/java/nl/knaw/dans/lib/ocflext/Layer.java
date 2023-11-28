@@ -17,6 +17,7 @@ package nl.knaw.dans.lib.ocflext;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.List;
 
 /**
@@ -34,27 +35,38 @@ import java.util.List;
  * </ul>
  */
 public interface Layer {
-    void createDirectories(String path) throws LayerNotWritableException, IOException;
+    void createDirectories(String path) throws IOException;
 
     /**
      * Deletes the files pointed to by <code>paths</code>. If the layer is closed, the backing archive file is first unarchived to a staging directory, the files are deleted, and the archive is
      * recreated. Not allowed if the layer is closing.
      *
      * @param paths the paths of the files to be deleted
+     * @throws IOException if the files cannot be deleted
      */
-    void deleteFiles(List<String> paths);
+    void deleteFiles(List<String> paths) throws IOException;
 
     InputStream read(String path) throws IOException;
 
     /**
-     * Changes the state of the layer to closed. This blocks new write operations from starting.
+     * Changes the state of the layer to closed.
      */
     void close();
 
     /**
-     * Turns the layer into an archive file. This is only allowed if the layer is closed and not already archived. This method will first wait for pending write operations to finish.
+     * Turns the layer into an archive file.
      */
     void archive();
 
-    void write(String filePath, InputStream content) throws LayerNotWritableException, IOException;
+    void write(String filePath, InputStream content) throws IOException;
+
+    void moveDirectoryInto(Path source, String destination) throws IOException;
+
+    boolean fileExists(String path) throws IOException;
+
+    void moveDirectoryInternal(String source, String destination) throws IOException;
+
+    Long getId();
+
+    void deleteDirectory(String path) throws IOException;
 }

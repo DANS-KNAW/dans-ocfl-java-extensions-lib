@@ -20,38 +20,57 @@ import io.ocfl.api.model.DigestAlgorithm;
 import io.ocfl.core.storage.common.Listing;
 import io.ocfl.core.storage.common.OcflObjectRootDirIterator;
 import io.ocfl.core.storage.common.Storage;
+import lombok.Builder;
 import lombok.SneakyThrows;
-import org.apache.commons.io.FileUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 
-import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.stream.Collectors;
 
+@Builder
+@Slf4j
 public class LayeredStorage implements Storage {
+    /**
+     * @param layerManager the layer manager
+     */
     private LayerManager layerManager;
 
-    public void openNewTopLayer() {
-        layerManager.openNewTopLayer();
-    }
+    /**
+     * @param layerDatabase the layer database
+     */
+    private LayerDatabase layerDatabase;
+
+    /**
+     * @param databaseBackedFilesFilter the database backed files filter
+     */
+    private Filter<String> databaseBackedFilesFilter = path -> false;
 
     @Override
     public List<Listing> listDirectory(String directoryPath) {
-        return layerManager.listDirectory(directoryPath);
+        return layerDatabase
+            .listDirectory(directoryPath)
+            .stream()
+            .map(ListingRecord::toListing)
+            .collect(Collectors.toList());
     }
 
     @Override
     public List<Listing> listRecursive(String directoryPath) {
-        return layerManager.listRecursive(directoryPath);
+        return layerDatabase.listRecursive(directoryPath)
+            .stream()
+            .map(ListingRecord::toListing)
+            .collect(Collectors.toList());
     }
 
     @Override
@@ -66,13 +85,23 @@ public class LayeredStorage implements Storage {
 
     @Override
     public boolean fileExists(String filePath) {
-        return layerManager.fileExists(filePath);
+        return layerDatabase.fileExists(filePath);
     }
 
     @SneakyThrows
     @Override
     public InputStream read(String filePath) {
-        return layerManager.read(filePath);
+        if (layerDatabase.isStoredInDatabase(filePath)) {
+            return layerDatabase.readFromDatabase(filePath);
+        }
+        else {
+            return layerDatabase.findLayersContaining(filePath).stream()
+                .sorted(Collections.reverseOrder()) // Get the newest layer first
+                .map(layerManager::getLayer)
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("No layer found for file: " + filePath))
+                .read(filePath);
+        }
     }
 
     @SneakyThrows
@@ -88,84 +117,167 @@ public class LayeredStorage implements Storage {
         return null;
     }
 
-
     @SneakyThrows
     @Override
     public void write(String filePath, byte[] content, String mediaType) {
-        layerManager.write(filePath, new ByteArrayInputStream(content));
+        layerManager.getTopLayer().write(filePath, IOUtils.toInputStream(new String(content), StandardCharsets.UTF_8));
+        layerDatabase.addFile(layerManager.getTopLayer().getId(), filePath);
     }
 
     @SneakyThrows
     @Override
     public void createDirectories(String path) {
-        layerManager.createDirectories(path);
+        layerManager.getTopLayer().createDirectories(path);
+        layerDatabase.addDirectory(layerManager.getTopLayer().getId(), path);
     }
 
     @Override
+    @SneakyThrows
     public void copyDirectoryOutOf(String source, Path destination) {
-
+        for (ListingRecord listingRecord : layerDatabase.listRecursive(source)) {
+            if (listingRecord.getType().equals(Listing.Type.Directory)) {
+                Files.createDirectories(destination.resolve(listingRecord.getPath()));
+            }
+            try (OutputStream os = Files.newOutputStream(destination.resolve(listingRecord.getPath()))) {
+                IOUtils.copy(read(listingRecord.getPath()), os);
+            }
+        }
     }
 
     @SneakyThrows
     @Override
     public void copyFileInto(Path source, String destination, String mediaType) {
-        try(InputStream is = FileUtils.openInputStream(source.toFile())) {
-            layerManager.write(destination, is);
-        }
+        layerManager.getTopLayer().write(destination, Files.newInputStream(source));
+        layerDatabase.addFile(layerManager.getTopLayer().getId(), destination);
     }
 
     @SneakyThrows
     @Override
     public void copyFileInternal(String sourceFile, String destinationFile) {
-        try(InputStream is = layerManager.read(sourceFile)) {
-            layerManager.write(destinationFile, is);
+        layerManager.getTopLayer().write(destinationFile, read(sourceFile));
+        layerDatabase.addFile(layerManager.getTopLayer().getId(), destinationFile);
+    }
+
+    @Override
+    @SneakyThrows
+    public void moveDirectoryInto(Path source, String destination) {
+        layerManager.getTopLayer().moveDirectoryInto(source, destination);
+        // Create listing records for all files in the moved directory
+        var records = new ArrayList<ListingRecord>();
+        try (var s = Files.walk(source)) {
+            s.forEach(path -> {
+                var destPath = destination + "/" + source.relativize(path);
+                var r = new ListingRecord();
+                    r.setLayerId(layerManager.getTopLayer().getId());
+                    r.setPath(destPath);
+                    r.setType(getListingType(path));
+                if (databaseBackedFilesFilter.accept(destPath)) {
+                    byte[] content = readToString(destPath).getBytes(StandardCharsets.UTF_8);
+                    log.debug("Adding content of file {} to database; file length = {}", destPath, content.length);
+                    r.setContent(content);
+                }
+                records.add(r);
+            });
+        }
+        layerDatabase.addRecords(layerManager.getTopLayer().getId(), records);
+    }
+
+    private Listing.Type getListingType(Path path) {
+        Listing.Type type;
+        if (Files.isDirectory(path)) {
+            type = Listing.Type.Directory;
+        }
+        else if (Files.isRegularFile(path)) {
+            type = Listing.Type.File;
+        }
+        else {
+            type = Listing.Type.Other;
+        }
+        return type;
+    }
+
+    @Override
+    @SneakyThrows
+    public void moveDirectoryInternal(String source, String destination) {
+        checkAllSourceFilesInTopLayer(source, "moveDirectoryInternal");
+        layerManager.getTopLayer().moveDirectoryInternal(source, destination);
+        // Update listing records for all files in the moved directory
+        var records = layerDatabase.listRecursive(source);
+        for (ListingRecord record : records) {
+            var destPath = destination + "/" + source.substring(source.lastIndexOf("/") + 1) + record.getPath().substring(source.length());
+            record.setPath(destPath);
+        }
+        layerDatabase.updateRecords(records);
+    }
+
+    @SneakyThrows
+    private void checkAllSourceFilesInTopLayer(String source, String methodName) {
+        for (ListingRecord listingRecord : layerDatabase.listRecursive(source)) {
+            if (!layerManager.getTopLayer().fileExists(listingRecord.getPath())) {
+                throw new IllegalStateException("File " + listingRecord.getPath() + " is not in the top layer. " + methodName
+                    + " can only be called if source is completely in the top layer.");
+            }
         }
     }
 
     @Override
-    public void moveDirectoryInto(Path source, String destination) {
-
-    }
-
-    @Override
-    public void moveDirectoryInternal(String source, String destination) {
-
-    }
-
-    @Override
+    @SneakyThrows
     public void deleteDirectory(String path) {
-
+        checkAllSourceFilesInTopLayer(path, "deleteDirectory");
+        layerManager.getTopLayer().deleteDirectory(path);
+        layerDatabase.deleteRecords(layerDatabase.listRecursive(path));
     }
 
     @Override
     public void deleteFile(String path) {
-        List<Layer> layers = layerManager.findLayersContaining(path);
-        for (Layer layer : layers) {
-            layer.deleteFiles(List.of(path));
-        }
+        deleteFiles(Collections.singletonList(path));
     }
 
     @Override
+    @SneakyThrows
     public void deleteFiles(Collection<String> paths) {
-        Map<Layer, Set<String>> layerPaths = new HashMap<>();
+        // Build a map from layer to paths in that layer
+        var layerPaths = new HashMap<Long, List<String>>();
         for (String path : paths) {
-            var layers = layerManager.findLayersContaining(path);
-            for (Layer layer : layers) {
-                layerPaths.computeIfAbsent(layer, k -> new HashSet<>()).add(path);
+            var layers = layerDatabase.findLayersContaining(path);
+            for (Long layerId : layers) {
+                layerPaths.computeIfAbsent(layerId, k -> new ArrayList<>()).add(path);
             }
         }
-        for (Map.Entry<Layer, Set<String>> entry : layerPaths.entrySet()) {
-            entry.getKey().deleteFiles(new ArrayList<>(entry.getValue()));
+        // Delete the files in each layer
+        for (var entry : layerPaths.entrySet()) {
+            layerManager.getLayer(entry.getKey())
+                .deleteFiles(entry.getValue());
         }
     }
 
     @Override
     public void deleteEmptyDirsDown(String path) {
-
+        var containedListings = layerDatabase.listRecursive(path);
+        // Sort by descending path length, so that we start with the deepest directories
+        containedListings.sort((listingRecord1, listingRecord2) ->
+            Integer.compare(listingRecord2.getPath().length(), listingRecord1.getPath().length()));
+        for (ListingRecord listingRecord : containedListings) {
+            if (listingRecord.getType().equals(Listing.Type.Directory)) {
+                if (directoryIsEmpty(listingRecord.getPath())) {
+                    // Recursive delete not supported in archived layers
+                    if (!listingRecord.getLayerId().equals(layerManager.getTopLayer().getId())) {
+                        throw new IllegalStateException("Trying to delete empty directory from non-top layer: " + listingRecord.getPath() + ". This is not allowed.");
+                    }
+                    deleteDirectory(listingRecord.getPath());
+                }
+            }
+        }
     }
 
     @Override
     public void deleteEmptyDirsUp(String path) {
-
+        var pathParts = path.split("/");
+        for (int i = pathParts.length - 1; i >= 0; i--) {
+            var parentPath = String.join("/", pathParts).substring(0, String.join("/", pathParts).lastIndexOf("/"));
+            if (directoryIsEmpty(parentPath)) {
+                deleteDirectory(parentPath);
+            }
+        }
     }
 }
