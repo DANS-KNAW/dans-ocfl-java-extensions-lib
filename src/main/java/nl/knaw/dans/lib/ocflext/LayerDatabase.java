@@ -15,8 +15,6 @@
  */
 package nl.knaw.dans.lib.ocflext;
 
-import io.ocfl.core.storage.common.Listing;
-
 import java.io.InputStream;
 import java.util.List;
 
@@ -43,39 +41,24 @@ public interface LayerDatabase {
     List<ListingRecord> listRecursive(String directoryPath);
 
     /**
-     * Adds a directory to the database.
+     * Adds a directory to the database. Ancestor directories are added automatically, if they do not exist yet.
      *
      * @param layerId the id of the layer that contains the directory
-     * @param path the path of the directory relative to the storage root
+     * @param path    the path of the directory relative to the storage root
      */
-    void addDirectory(long layerId, String path);
-
+    void addDirectories(long layerId, String path);
 
     void addRecords(long layerId, List<ListingRecord> records);
 
-
-
     /**
-     * Adds a file to the database.
+     * Adds a file to the database. The record for the parent directory must already exist.
      *
-     * @param layerId the id of the layer that contains the file
+     * @param layerId  the id of the layer that contains the file
      * @param filePath the path of the file relative to the storage root
      */
     void addFile(long layerId, String filePath);
 
-    /**
-     * Deletes a file from the database.
-     *
-     * @param layerId the id of the layer that contains the file
-     * @param path the path of the file relative to the storage root
-     */
-    void delete(long layerId, String path);
-
-
-
-
     void updateRecords(List<ListingRecord> records);
-
 
     void deleteRecords(List<ListingRecord> records);
 
@@ -87,13 +70,7 @@ public interface LayerDatabase {
      */
     List<Long> findLayersContaining(String path);
 
-
-    Long findNewestLayerContaining(String path);
-
-
-    boolean fileExists(String filePath);
-
-    boolean isStoredInDatabase(String filePath);
+    boolean isContentStoredInDatabase(String filePath);
 
     /**
      * Reads the file from the database from the most recent layer that contains it.
@@ -101,8 +78,5 @@ public interface LayerDatabase {
      * @param filePath path relative to the root of the storage
      * @return the input stream
      */
-    InputStream readFromDatabase(String filePath);
-
-
-
+    InputStream readContentFromDatabase(String filePath);
 }
