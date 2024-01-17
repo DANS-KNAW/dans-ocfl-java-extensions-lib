@@ -27,16 +27,17 @@ public class LayerImplDeleteFilesTest extends AbstractTestWithTestDir {
 
     @Test
     public void deleteFiles_should_delete_files_in_staging_dir_if_layer_is_open() throws Exception {
-        var layer = new LayerImpl(1, testDir.resolve("staging"), new ZipArchive(testDir.resolve("test.zip")));
-        if (!testDir.resolve("staging/path/to").toFile().mkdirs() ||
-            !testDir.resolve("staging/path/to/file1").toFile().createNewFile() ||
-            !testDir.resolve("staging/path/to/file2").toFile().createNewFile()) {
+        var stagingDir = testDir.resolve("staging");
+        var layer = new LayerImpl(1, stagingDir, new ZipArchive(testDir.resolve("test.zip")));
+        if (!stagingDir.resolve("path/to").toFile().mkdirs() ||
+            !stagingDir.resolve("path/to/file1").toFile().createNewFile() ||
+            !stagingDir.resolve("path/to/file2").toFile().createNewFile()) {
             throw new Exception("Could not create files to delete");
         }
 
         layer.deleteFiles(List.of("path/to/file1", "path/to/file2"));
-        assertThat(testDir.resolve("staging/path/to/file1")).doesNotExist();
-        assertThat(testDir.resolve("staging/path/to/file2")).doesNotExist();
+        assertThat(stagingDir.resolve("path/to/file1")).doesNotExist();
+        assertThat(stagingDir.resolve("path/to/file2")).doesNotExist();
     }
 
     @Test
@@ -58,10 +59,11 @@ public class LayerImplDeleteFilesTest extends AbstractTestWithTestDir {
 
     @Test
     public void deleteFiles_should_throw_IllegalArgumentException_if_path_contains_null() throws Exception {
-        var layer = new LayerImpl(1, testDir.resolve("staging"), new ZipArchive(testDir.resolve("test.zip")));
+        var stagingDir = testDir.resolve("staging");
+        var layer = new LayerImpl(1, stagingDir, new ZipArchive(testDir.resolve("test.zip")));
 
-        if (!testDir.resolve("staging/path/to").toFile().mkdirs() ||
-            !testDir.resolve("staging/path/to/file1").toFile().createNewFile()) {
+        if (!stagingDir.resolve("path/to").toFile().mkdirs() ||
+            !stagingDir.resolve("path/to/file1").toFile().createNewFile()) {
             throw new Exception("Could not create files to delete");
         }
         var paths = new ArrayList<String>();

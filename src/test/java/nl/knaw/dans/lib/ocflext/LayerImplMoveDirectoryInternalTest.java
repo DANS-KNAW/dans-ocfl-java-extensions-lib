@@ -24,29 +24,31 @@ public class LayerImplMoveDirectoryInternalTest extends AbstractTestWithTestDir 
 
     @Test
     public void moveDirectoryInternal_should_move_directory_from_staging_dir_to_staging_dir_if_layer_is_open() throws Exception {
-        var layer = new LayerImpl(1, testDir.resolve("staging"), new ZipArchive(testDir.resolve("test.zip")));
+        var stagingDir = testDir.resolve("staging");
+        var layer = new LayerImpl(1, stagingDir, new ZipArchive(testDir.resolve("test.zip")));
 
         // Create a directory with files in it
-        if (!testDir.resolve("staging/path/to").toFile().mkdirs() ||
-            !testDir.resolve("staging/path/to/file1").toFile().createNewFile() ||
-            !testDir.resolve("staging/path/to/file2").toFile().createNewFile()) {
+        if (!stagingDir.resolve("path/to").toFile().mkdirs() ||
+            !stagingDir.resolve("path/to/file1").toFile().createNewFile() ||
+            !stagingDir.resolve("path/to/file2").toFile().createNewFile()) {
             throw new Exception("Could not create files to move");
         }
 
         layer.moveDirectoryInternal("path/to/", "path/too/");
-        assertThat(testDir.resolve("staging/path/to")).doesNotExist();
-        assertThat(testDir.resolve("staging/path/too")).exists();
-        assertThat(testDir.resolve("staging/path/too/file1")).exists();
-        assertThat(testDir.resolve("staging/path/too/file2")).exists();
+        assertThat(stagingDir.resolve("path/to")).doesNotExist();
+        assertThat(stagingDir.resolve("path/too")).exists();
+        assertThat(stagingDir.resolve("path/too/file1")).exists();
+        assertThat(stagingDir.resolve("path/too/file2")).exists();
     }
 
     @Test
     public void moveDirectoryInternal_should_throw_IllegalStateException_when_layer_is_closed() throws Exception {
-        var layer = new LayerImpl(1, testDir.resolve("staging"), new ZipArchive(testDir.resolve("test.zip")));
+        var stagingDir = testDir.resolve("staging");
+        var layer = new LayerImpl(1, stagingDir, new ZipArchive(testDir.resolve("test.zip")));
         // Create a directory with files in it
-        if (!testDir.resolve("staging/path/to").toFile().mkdirs() ||
-            !testDir.resolve("staging/path/to/file1").toFile().createNewFile() ||
-            !testDir.resolve("staging/path/to/file2").toFile().createNewFile()) {
+        if (!stagingDir.resolve("path/to").toFile().mkdirs() ||
+            !stagingDir.resolve("path/to/file1").toFile().createNewFile() ||
+            !stagingDir.resolve("path/to/file2").toFile().createNewFile()) {
             throw new Exception("Could not create files to move");
         }
         layer.close();

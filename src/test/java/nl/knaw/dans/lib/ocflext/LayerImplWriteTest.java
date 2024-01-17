@@ -15,5 +15,39 @@
  */
 package nl.knaw.dans.lib.ocflext;
 
+import org.junit.jupiter.api.Test;
+
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
+
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+
 public class LayerImplWriteTest extends AbstractTestWithTestDir {
+
+    @Test
+    public void write_should_write_file_to_staging_dir_when_layer_is_open() throws Exception {
+        var stagingDir = testDir.resolve("staging");
+        var layer = new LayerImpl(1, stagingDir, new ZipArchive(testDir.resolve("test.zip")));
+
+        // Write a file to the layer
+        var testContent = "Hello world!";
+        layer.write("test.txt", new ByteArrayInputStream(testContent.getBytes(StandardCharsets.UTF_8)));
+
+        // Verify that the file is written to the staging dir and has
+        assertThat(stagingDir.resolve("test.txt")).exists();
+        assertThat(stagingDir.resolve("test.txt")).usingCharset(StandardCharsets.UTF_8).hasContent(testContent);
+    }
+
+    @Test
+    public void write_should_throw_IllegalStateException_when_layer_is_closed() throws Exception {
+        var stagingDir = testDir.resolve("staging");
+        var layer = new LayerImpl(1, stagingDir, new ZipArchive(testDir.resolve("test.zip")));
+        layer.close();
+
+        assertThatThrownBy(() -> layer.write("whatever.txt", new ByteArrayInputStream("whatever".getBytes(StandardCharsets.UTF_8)))).
+            isInstanceOf(IllegalStateException.class)
+            .hasMessage("Layer is closed, but must be open for this operation");
+    }
+
 }
