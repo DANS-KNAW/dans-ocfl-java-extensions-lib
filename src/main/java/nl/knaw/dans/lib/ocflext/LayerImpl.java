@@ -78,8 +78,12 @@ class LayerImpl implements Layer {
         }
     }
 
+    /*
+     * This method is synchronized, because the layer might otherwise be closed just after the check. Note, that after the file handle is returned, the layer may be closed, but
+     * that is not a problem, because the file handle is still valid until it is closed, even if the directory containing the file is deleted.
+     */
     @Override
-    public InputStream read(String path) throws IOException {
+    public synchronized InputStream read(String path) throws IOException {
         if (archive.isArchived()) {
             return archive.getInputStreamFor(path);
         }
@@ -93,13 +97,13 @@ class LayerImpl implements Layer {
     }
 
     @Override
-    public void close() {
+    public synchronized void close() {
         closed = true;
     }
 
     @Override
     @SneakyThrows
-    public void archive() {
+    public synchronized void archive() {
         checkClosed();
         checkNotArchived();
         ensureStagingDirExists();

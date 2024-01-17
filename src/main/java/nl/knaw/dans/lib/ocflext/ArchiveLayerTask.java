@@ -15,22 +15,18 @@
  */
 package nl.knaw.dans.lib.ocflext;
 
-/**
- * Manages {@link Layer}s.
- */
-public interface LayerManager {
-    /**
-     * Closes the current top layer and creates a new top layer. The old top layer will be scheduled for archiving.
-     */
-    void newTopLayer();
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 
-    Layer getTopLayer();
+@RequiredArgsConstructor
+public class ArchiveLayerTask implements Runnable {
 
-    /**
-     * Returns the layer with the given id.
-     *
-     * @param id the id of the layer
-     * @return the layer
-     */
-    Layer getLayer(long id);
+    @NonNull
+    private final Layer layer;
+
+    @Override
+    public void run() {
+        layer.archive();
+
+    }
 }
