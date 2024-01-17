@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 @RequiredArgsConstructor
@@ -44,16 +45,31 @@ class LayerImpl implements Layer {
 
     @Override
     public void createDirectories(String path) throws IOException {
+        checkOpen();
+        validatePath(path);
         Files.createDirectories(stagingDir.resolve(path));
     }
 
-    @Override
-    public Long getId() {
-        return null;
+    private void validatePath(String path) {
+        if (path == null)
+            throw new IllegalArgumentException("Path cannot be null");
+        if (path.isEmpty())
+            throw new IllegalArgumentException("Path cannot be empty");
+        if (path.isBlank())
+            throw new IllegalArgumentException("Path cannot be blank");
+        Path p = Paths.get(path);
+        if (!p.normalize().equals(p))
+            throw new IllegalArgumentException("Path is not a valid path");
+    }
+
+    private void checkOpen() {
+        if (closed)
+            throw new IllegalStateException("Layer is closed");
     }
 
     @Override
     public void deleteFiles(List<String> paths) throws IOException {
+        checkOpen();
         for (String path : paths) {
             Files.delete(stagingDir.resolve(path));
         }

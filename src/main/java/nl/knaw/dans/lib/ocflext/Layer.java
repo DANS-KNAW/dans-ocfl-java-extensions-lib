@@ -66,7 +66,7 @@ public interface Layer {
 
     void moveDirectoryInternal(String source, String destination) throws IOException;
 
-    Long getId();
+    long getId();
 
     void deleteDirectory(String path) throws IOException;
 }
