@@ -55,6 +55,7 @@ public class LayeredStorage implements Storage {
     /**
      * @param databaseBackedFilesFilter the database backed files filter
      */
+    @Builder.Default
     private Filter<String> databaseBackedFilesFilter = path -> false;
 
     @Override

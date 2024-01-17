@@ -30,7 +30,6 @@ import java.util.List;
 @RequiredArgsConstructor
 class LayerImpl implements Layer {
 
-    @NonNull
     @Getter
     private final long id;
 
@@ -70,7 +69,10 @@ class LayerImpl implements Layer {
     @Override
     public void deleteFiles(List<String> paths) throws IOException {
         checkOpen();
+        if (paths == null)
+            throw new IllegalArgumentException("Paths cannot be null");
         for (String path : paths) {
+            validatePath(path);
             Files.delete(stagingDir.resolve(path));
         }
     }

@@ -20,26 +20,11 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.List;
 
-/**
- * <p>
- * A layer is a collection of files and directories, that is intended to be stacked on top of other layers. Files in newer layers overwrite files in older layers with the same path. A layer can be
- * backed by a staging directory or an archive file.
- * </p>
- * <p>
- * A layer can be open, closing or closed:
- * </p>
- * <ul>
- * <li>"Open" means the layer is writable.</li>
- * <li>"Closing" means the layer is no longer writable, but the backing archive file has not yet fully been written. It can also mean than the archive file is in the process of being recreated because of a delete operation. </li>
- * <li>"Closed" means the layer is no longer writable and the backing file has been written.</li>
- * </ul>
- */
 public interface Layer {
     void createDirectories(String path) throws IOException;
 
     /**
-     * Deletes the files pointed to by <code>paths</code>. If the layer is closed, the backing archive file is first unarchived to a staging directory, the files are deleted, and the archive is
-     * recreated. Not allowed if the layer is closing.
+     * Deletes the files pointed to by <code>paths</code>. Not allowed when the layer is closed.
      *
      * @param paths the paths of the files to be deleted
      * @throws IOException if the files cannot be deleted
