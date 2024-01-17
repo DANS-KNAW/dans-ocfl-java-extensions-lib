@@ -170,9 +170,9 @@ public class LayeredStorage implements Storage {
             s.forEach(path -> {
                 var destPath = destination + "/" + source.relativize(path);
                 var r = new ListingRecord();
-                    r.setLayerId(layerManager.getTopLayer().getId());
-                    r.setPath(destPath);
-                    r.setType(getListingType(path));
+                r.setLayerId(layerManager.getTopLayer().getId());
+                r.setPath(destPath);
+                r.setType(getListingType(path));
                 if (databaseBackedFilesFilter.accept(destPath)) {
                     byte[] content = readToString(destPath).getBytes(StandardCharsets.UTF_8);
                     log.debug("Adding content of file {} to database; file length = {}", destPath, content.length);

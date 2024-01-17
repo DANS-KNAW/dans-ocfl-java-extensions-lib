@@ -54,5 +54,12 @@ public interface Archive {
      */
     boolean isArchived();
 
+    /**
+     * Returns whether the file exists in the archive.
+     *
+     * @param filePath the path of the file to check
+     * @return whether the file exists
+     */
+    boolean fileExists(String filePath);
 
 }

@@ -27,7 +27,7 @@ To use this library in a Maven-based project:
             </repository>
         </repositories>
 
-2. Include a dependency on this library. 
+2. Include a dependency on this library.
 
         <dependency>
             <groupId>nl.knaw.dans.lib</groupId>

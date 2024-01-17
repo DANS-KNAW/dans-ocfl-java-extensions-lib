@@ -27,6 +27,7 @@ import java.nio.file.Path;
 public abstract class AbstractTestWithTestDir {
     protected final Path testDir = Path.of("target/test")
         .resolve(getClass().getSimpleName());
+
     @BeforeEach
     public void setUp() throws Exception {
         FileUtils.deleteDirectory(testDir.toFile());

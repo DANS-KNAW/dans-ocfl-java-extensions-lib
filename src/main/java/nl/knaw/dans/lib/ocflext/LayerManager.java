@@ -15,12 +15,6 @@
  */
 package nl.knaw.dans.lib.ocflext;
 
-import io.ocfl.core.storage.common.Listing;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.List;
-
 /**
  * Manages {@link Layer}s.
  */

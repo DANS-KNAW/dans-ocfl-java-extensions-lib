@@ -47,7 +47,13 @@ class LayerImpl implements Layer {
     public void createDirectories(String path) throws IOException {
         checkOpen();
         validatePath(path);
+        ensureStagingDirExists();
         Files.createDirectories(stagingDir.resolve(path));
+    }
+
+    private void ensureStagingDirExists() throws IOException {
+        if (!Files.exists(stagingDir))
+            Files.createDirectories(stagingDir);
     }
 
     private void validatePath(String path) {
@@ -75,6 +81,7 @@ class LayerImpl implements Layer {
     @Override
     public void deleteFiles(List<String> paths) throws IOException {
         checkOpen();
+        ensureStagingDirExists();
         if (paths == null)
             throw new IllegalArgumentException("Paths cannot be null");
         for (String path : paths) {
@@ -107,6 +114,7 @@ class LayerImpl implements Layer {
     public void archive() {
         checkClosed();
         checkNotArchived();
+        ensureStagingDirExists();
         archive.archiveFrom(stagingDir);
         FileUtils.deleteDirectory(stagingDir.toFile());
     }
@@ -120,17 +128,28 @@ class LayerImpl implements Layer {
     public void write(String filePath, InputStream content) throws IOException {
         checkOpen();
         validatePath(filePath);
+        ensureStagingDirExists();
         Files.copy(content, stagingDir.resolve(filePath));
     }
 
     @Override
     public void moveDirectoryInto(Path source, String destination) throws IOException {
         checkOpen();
+        ensureStagingDirExists();
         Files.move(source, stagingDir.resolve(destination));
     }
 
     @Override
     public boolean fileExists(String path) throws IOException {
+        if (archive.isArchived()) {
+            return archive.fileExists(path);
+        }
+        else {
+            return fileExistsInStaging(path);
+        }
+    }
+
+    private boolean fileExistsInStaging(String path) {
         return Files.exists(stagingDir.resolve(path));
     }
 

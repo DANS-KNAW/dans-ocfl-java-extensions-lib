@@ -134,4 +134,14 @@ public class ZipArchive implements Archive {
             }
         }
     }
+
+    @Override
+    public boolean fileExists(String filePath) {
+        try (var is = getInputStreamFor(filePath)) {
+            return is != null;
+        }
+        catch (IOException e) {
+            return false;
+        }
+    }
 }

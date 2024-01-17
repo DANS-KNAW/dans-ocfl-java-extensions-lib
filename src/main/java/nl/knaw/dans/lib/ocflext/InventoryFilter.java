@@ -26,6 +26,7 @@ import static io.ocfl.api.OcflConstants.OBJECT_NAMASTE_PREFIX;
 @AllArgsConstructor
 public class InventoryFilter implements Filter<String> {
     private final Path ocflStorageRoot;
+
     @Override
     public boolean accept(String s) {
         var path = ocflStorageRoot.resolve(s);
