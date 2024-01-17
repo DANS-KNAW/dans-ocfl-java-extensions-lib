@@ -20,7 +20,9 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
+import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
 import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream;
+import org.apache.commons.compress.archivers.zip.ZipFile;
 import org.apache.commons.compress.utils.IOUtils;
 
 import java.io.BufferedOutputStream;
@@ -42,13 +44,38 @@ public class ZipArchive implements Archive {
     private boolean archived = false;
 
     @Override
-    public InputStream read(String filePath) throws IOException {
-        return null;
+    public InputStream getInputStreamFor(String filePath) throws IOException {
+        @SuppressWarnings("resource") // The caller is responsible for closing the stream
+        ZipFile zipFile = new ZipFile(this.zipFile.toFile());
+        ZipArchiveEntry entry = zipFile.getEntry(filePath);
+        return zipFile.getInputStream(entry);
     }
 
     @Override
     public void unarchiveTo(Path stagingDir) {
-
+        ZipArchiveInputStream zipArchiveInputStream = null;
+        try {
+            zipArchiveInputStream = new ZipArchiveInputStream(new FileInputStream(zipFile.toFile()));
+            ZipArchiveEntry entry = zipArchiveInputStream.getNextZipEntry();
+            while (entry != null) {
+                if (entry.isDirectory()) {
+                    Files.createDirectories(stagingDir.resolve(entry.getName()));
+                }
+                else {
+                    Path file = stagingDir.resolve(entry.getName());
+                    Files.createDirectories(file.getParent());
+                    Files.copy(zipArchiveInputStream, file);
+                }
+                entry = zipArchiveInputStream.getNextZipEntry();
+            }
+            archived = false;
+        }
+        catch (IOException e) {
+            throw new RuntimeException("Could not unarchive zip file", e);
+        }
+        finally {
+            IOUtils.closeQuietly(zipArchiveInputStream);
+        }
     }
 
     @Override
@@ -73,12 +100,12 @@ public class ZipArchive implements Archive {
                     addFileToZipStream(zipArchiveOutputStream, file, "");
                 }
             }
+            archived = true;
         }
         finally {
             IOUtils.closeQuietly(zipArchiveOutputStream);
             IOUtils.closeQuietly(bufferedOutputStream);
             IOUtils.closeQuietly(outputStream);
-            archived = true;
         }
     }
 

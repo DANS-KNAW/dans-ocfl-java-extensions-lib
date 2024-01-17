@@ -35,7 +35,7 @@ public class LayerImplCreateDirectoriesTest extends AbstractTestWithTestDir {
         layer.close();
         assertThatThrownBy(() -> layer.createDirectories("path/to/directory"))
             .isInstanceOf(IllegalStateException.class)
-            .hasMessage("Layer is closed");
+            .hasMessage("Layer is closed, but must be open for this operation");
     }
 
     @Test

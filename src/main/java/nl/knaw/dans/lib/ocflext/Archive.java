@@ -25,13 +25,13 @@ import java.nio.file.Path;
 public interface Archive {
 
     /**
-     * Returns an input stream for the file at the given path.
+     * Returns an input stream for the file at the given path. The caller is responsible for closing the stream.
      *
      * @param filePath the path of the file to read
      * @return the input stream
      * @throws IOException if an I/O error occurs
      */
-    InputStream read(String filePath) throws IOException;
+    InputStream getInputStreamFor(String filePath) throws IOException;
 
     /**
      * Unarchives the archive to the given staging directory.

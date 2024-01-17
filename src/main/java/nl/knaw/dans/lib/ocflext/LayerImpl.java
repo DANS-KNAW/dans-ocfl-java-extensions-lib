@@ -18,6 +18,7 @@ package nl.knaw.dans.lib.ocflext;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
 
 import java.io.IOException;
@@ -63,7 +64,12 @@ class LayerImpl implements Layer {
 
     private void checkOpen() {
         if (closed)
-            throw new IllegalStateException("Layer is closed");
+            throw new IllegalStateException("Layer is closed, but must be open for this operation");
+    }
+
+    private void checkClosed() {
+        if (!closed)
+            throw new IllegalStateException("Layer is open, but must be closed for this operation");
     }
 
     @Override
@@ -79,6 +85,15 @@ class LayerImpl implements Layer {
 
     @Override
     public InputStream read(String path) throws IOException {
+        if (archive.isArchived()) {
+            return archive.getInputStreamFor(path);
+        }
+        else {
+            return readFromStaging(path);
+        }
+    }
+
+    private InputStream readFromStaging(String path) throws IOException {
         return Files.newInputStream(stagingDir.resolve(path));
     }
 
@@ -88,17 +103,23 @@ class LayerImpl implements Layer {
     }
 
     @Override
+    @SneakyThrows
     public void archive() {
+        checkClosed();
         archive.archiveFrom(stagingDir);
+        FileUtils.deleteDirectory(stagingDir.toFile());
     }
 
     @Override
     public void write(String filePath, InputStream content) throws IOException {
+        checkOpen();
+        validatePath(filePath);
         Files.copy(content, stagingDir.resolve(filePath));
     }
 
     @Override
     public void moveDirectoryInto(Path source, String destination) throws IOException {
+        checkOpen();
         Files.move(source, stagingDir.resolve(destination));
     }
 
@@ -109,6 +130,7 @@ class LayerImpl implements Layer {
 
     @Override
     public void moveDirectoryInternal(String source, String destination) throws IOException {
+        checkOpen();
         Files.move(stagingDir.resolve(source), stagingDir.resolve(destination));
     }
 
