@@ -56,18 +56,6 @@ class LayerImpl implements Layer {
             Files.createDirectories(stagingDir);
     }
 
-    private void validatePath(String path) {
-        if (path == null)
-            throw new IllegalArgumentException("Path cannot be null");
-        if (path.isEmpty())
-            throw new IllegalArgumentException("Path cannot be empty");
-        if (path.isBlank())
-            throw new IllegalArgumentException("Path cannot be blank");
-        Path p = Paths.get(path);
-        if (!p.normalize().equals(p))
-            throw new IllegalArgumentException("Path is not a valid path");
-    }
-
     private void checkOpen() {
         if (closed)
             throw new IllegalStateException("Layer is closed, but must be open for this operation");
@@ -136,6 +124,7 @@ class LayerImpl implements Layer {
     public void moveDirectoryInto(Path source, String destination) throws IOException {
         checkOpen();
         ensureStagingDirExists();
+        validatePath(destination);
         Files.move(source, stagingDir.resolve(destination));
     }
 
@@ -156,11 +145,29 @@ class LayerImpl implements Layer {
     @Override
     public void moveDirectoryInternal(String source, String destination) throws IOException {
         checkOpen();
+        validatePath(source);
+        validatePath(destination);
         Files.move(stagingDir.resolve(source), stagingDir.resolve(destination));
     }
 
     @Override
     public void deleteDirectory(String path) throws IOException {
+        checkOpen();
+        validatePath(path);
         FileUtils.deleteDirectory(stagingDir.resolve(path).toFile());
     }
+
+    private void validatePath(String path) {
+        if (path == null)
+            throw new IllegalArgumentException("Path cannot be null");
+        if (path.isEmpty())
+            throw new IllegalArgumentException("Path cannot be empty");
+        if (path.isBlank())
+            throw new IllegalArgumentException("Path cannot be blank");
+        var pathInStagingDir = stagingDir.resolve(path).normalize();
+        // Check if the path is outside the staging dir
+        if (!pathInStagingDir.startsWith(stagingDir))
+            throw new IllegalArgumentException("Path is outside staging directory");
+    }
+
 }

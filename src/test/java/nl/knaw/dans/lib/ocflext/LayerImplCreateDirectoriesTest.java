@@ -65,9 +65,9 @@ public class LayerImplCreateDirectoriesTest extends AbstractTestWithTestDir {
     @Test
     public void createDirectories_should_throw_IllegalArgumentException_if_path_is_not_a_valid_path() throws Exception {
         var layer = new LayerImpl(1, testDir.resolve("staging"), new ZipArchive(testDir.resolve("test.zip")));
-        assertThatThrownBy(() -> layer.createDirectories("path/to/../../directory"))
+        assertThatThrownBy(() -> layer.createDirectories("path/to/../../../directory"))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessage("Path is not a valid path");
+            .hasMessage("Path is outside staging directory");
     }
 
 }
