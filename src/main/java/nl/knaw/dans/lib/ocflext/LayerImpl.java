@@ -106,8 +106,14 @@ class LayerImpl implements Layer {
     @SneakyThrows
     public void archive() {
         checkClosed();
+        checkNotArchived();
         archive.archiveFrom(stagingDir);
         FileUtils.deleteDirectory(stagingDir.toFile());
+    }
+
+    private void checkNotArchived() {
+        if (archive.isArchived())
+            throw new IllegalStateException("Layer is already archived");
     }
 
     @Override
