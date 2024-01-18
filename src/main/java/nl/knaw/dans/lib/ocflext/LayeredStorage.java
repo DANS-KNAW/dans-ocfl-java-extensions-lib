@@ -193,7 +193,7 @@ public class LayeredStorage implements Storage {
                 records.add(r);
             });
         }
-        layerDatabase.addRecords(records);
+        layerDatabase.saveRecords(records);
         // TODO: rollback move on disk if database update fails
     }
 
@@ -222,7 +222,7 @@ public class LayeredStorage implements Storage {
             var destPath = destination + "/" + source.substring(source.lastIndexOf("/") + 1) + record.getPath().substring(source.length());
             record.setPath(destPath);
         }
-        layerDatabase.updateRecords(records);
+        layerDatabase.saveRecords(records);
     }
 
     @SneakyThrows

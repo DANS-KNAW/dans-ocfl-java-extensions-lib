@@ -23,7 +23,6 @@ import java.util.List;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-
 public class LayerDatabaseImplAddDirectoriesTest extends LayerDatabaseFixture {
 
     @Test
@@ -33,22 +32,22 @@ public class LayerDatabaseImplAddDirectoriesTest extends LayerDatabaseFixture {
         assertThat(dao.listAll())
             .usingRecursiveFieldByFieldElementComparatorIgnoringFields("generatedId")
             .containsExactlyInAnyOrder(
-            ListingRecord.builder()
-                .layerId(1L)
-                .path("root")
-                .type(Listing.Type.Directory)
-                .build(),
-            ListingRecord.builder()
-                .layerId(1L)
-                .path("root/child")
-                .type(Listing.Type.Directory)
-                .build(),
-            ListingRecord.builder()
-                .layerId(1L)
-                .path("root/child/grandchild")
-                .type(Listing.Type.Directory)
-                .build()
-        );
+                ListingRecord.builder()
+                    .layerId(1L)
+                    .path("root")
+                    .type(Listing.Type.Directory)
+                    .build(),
+                ListingRecord.builder()
+                    .layerId(1L)
+                    .path("root/child")
+                    .type(Listing.Type.Directory)
+                    .build(),
+                ListingRecord.builder()
+                    .layerId(1L)
+                    .path("root/child/grandchild")
+                    .type(Listing.Type.Directory)
+                    .build()
+            );
     }
 
     @Test
@@ -59,22 +58,22 @@ public class LayerDatabaseImplAddDirectoriesTest extends LayerDatabaseFixture {
         assertThat(dao.listAll())
             .usingRecursiveFieldByFieldElementComparatorIgnoringFields("generatedId")
             .containsExactlyInAnyOrder(
-            ListingRecord.builder()
-                .layerId(1L)
-                .path("root")
-                .type(Listing.Type.Directory)
-                .build(),
-            ListingRecord.builder()
-                .layerId(1L)
-                .path("root/child")
-                .type(Listing.Type.Directory)
-                .build(),
-            ListingRecord.builder()
-                .layerId(1L)
-                .path("root/child/grandchild")
-                .type(Listing.Type.Directory)
-                .build()
-        );
+                ListingRecord.builder()
+                    .layerId(1L)
+                    .path("root")
+                    .type(Listing.Type.Directory)
+                    .build(),
+                ListingRecord.builder()
+                    .layerId(1L)
+                    .path("root/child")
+                    .type(Listing.Type.Directory)
+                    .build(),
+                ListingRecord.builder()
+                    .layerId(1L)
+                    .path("root/child/grandchild")
+                    .type(Listing.Type.Directory)
+                    .build()
+            );
     }
 
     @Test
@@ -85,42 +84,42 @@ public class LayerDatabaseImplAddDirectoriesTest extends LayerDatabaseFixture {
         assertThat(dao.listAll())
             .usingRecursiveFieldByFieldElementComparatorIgnoringFields("generatedId")
             .containsExactlyInAnyOrder(
-            ListingRecord.builder()
-                .layerId(1L)
-                .path("root")
-                .type(Listing.Type.Directory)
-                .build(),
-            ListingRecord.builder()
-                .layerId(1L)
-                .path("root/child")
-                .type(Listing.Type.Directory)
-                .build(),
-            ListingRecord.builder()
-                .layerId(1L)
-                .path("root/child/grandchild")
-                .type(Listing.Type.Directory)
-                .build(),
-            ListingRecord.builder()
-                .layerId(2L)
-                .path("root")
-                .type(Listing.Type.Directory)
-                .build(),
-            ListingRecord.builder()
-                .layerId(2L)
-                .path("root/child")
-                .type(Listing.Type.Directory)
-                .build(),
-            ListingRecord.builder()
-                .layerId(2L)
-                .path("root/child/grandchild")
-                .type(Listing.Type.Directory)
-                .build()
-        );
+                ListingRecord.builder()
+                    .layerId(1L)
+                    .path("root")
+                    .type(Listing.Type.Directory)
+                    .build(),
+                ListingRecord.builder()
+                    .layerId(1L)
+                    .path("root/child")
+                    .type(Listing.Type.Directory)
+                    .build(),
+                ListingRecord.builder()
+                    .layerId(1L)
+                    .path("root/child/grandchild")
+                    .type(Listing.Type.Directory)
+                    .build(),
+                ListingRecord.builder()
+                    .layerId(2L)
+                    .path("root")
+                    .type(Listing.Type.Directory)
+                    .build(),
+                ListingRecord.builder()
+                    .layerId(2L)
+                    .path("root/child")
+                    .type(Listing.Type.Directory)
+                    .build(),
+                ListingRecord.builder()
+                    .layerId(2L)
+                    .path("root/child/grandchild")
+                    .type(Listing.Type.Directory)
+                    .build()
+            );
     }
 
     @Test
     public void addDirectories_should_throw_an_IllegalArgumentException_if_the_path_contains_a_file_in_previous_layer() {
-        daoTestExtension.inTransaction(() -> dao.addRecords(List.of(
+        daoTestExtension.inTransaction(() -> dao.saveRecords(List.of(
             ListingRecord.builder()
                 .layerId(1L)
                 .path("root/child/grandchild")
@@ -135,7 +134,7 @@ public class LayerDatabaseImplAddDirectoriesTest extends LayerDatabaseFixture {
 
     @Test
     public void addDirectories_should_throw_an_IllegalArgumentException_if_the_path_contains_a_file_in_the_same_layer() {
-        daoTestExtension.inTransaction(() -> dao.addRecords(List.of(
+        daoTestExtension.inTransaction(() -> dao.saveRecords(List.of(
             ListingRecord.builder()
                 .layerId(1L)
                 .path("root/child/grandchild")

@@ -46,7 +46,7 @@ public class LayerDatabaseImpl extends AbstractDAO<ListingRecord> implements Lay
     }
 
     @Override
-    public List<ListingRecord> listDirectory(String directoryPath) throws IOException{
+    public List<ListingRecord> listDirectory(String directoryPath) throws IOException {
         directoryPath = preprocessDirectoryArgument(directoryPath);
         return namedTypedQuery("ListingRecord.listDirectory")
             .setParameter("path", directoryPath + "%")
@@ -81,8 +81,6 @@ public class LayerDatabaseImpl extends AbstractDAO<ListingRecord> implements Lay
         }
         return directoryPath;
     }
-
-
 
     @Override
     public void addDirectories(long layerId, String path) {
@@ -119,7 +117,7 @@ public class LayerDatabaseImpl extends AbstractDAO<ListingRecord> implements Lay
     }
 
     @Override
-    public void addRecords(List<ListingRecord> records) {
+    public void saveRecords(List<ListingRecord> records) {
         for (ListingRecord record : records) {
             save(record);
         }
@@ -127,7 +125,7 @@ public class LayerDatabaseImpl extends AbstractDAO<ListingRecord> implements Lay
 
     @Override
     public void addFile(long layerId, String filePath) {
-        addRecords(List.of(
+        saveRecords(List.of(
             new ListingRecord.Builder()
                 .layerId(layerId)
                 .path(filePath)
@@ -137,13 +135,10 @@ public class LayerDatabaseImpl extends AbstractDAO<ListingRecord> implements Lay
     }
 
     @Override
-    public void updateRecords(List<ListingRecord> records) {
-
-    }
-
-    @Override
     public void deleteRecords(List<ListingRecord> records) {
-
+        for (ListingRecord record : records) {
+            currentSession().delete(record);
+        }
     }
 
     @Override
