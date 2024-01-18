@@ -28,24 +28,42 @@ public class LayerDatabaseImpl extends AbstractDAO<ListingRecord> implements Lay
         super(sessionFactory);
     }
 
-    public ListingRecord save(ListingRecord details) {
-        if (details.getGeneratedId() == null) {
-            return persist(details);
+    public ListingRecord save(ListingRecord listingRecord) {
+        if (listingRecord.getGeneratedId() == null) {
+            return persist(listingRecord);
         }
-        var currentDetails = get(details.getGeneratedId());
-        if (currentDetails == null) {
-            return persist(details);
+        var currentListingRecord = get(listingRecord.getGeneratedId());
+        if (currentListingRecord == null) {
+            return persist(listingRecord);
         }
         else {
             try (var s = currentSession()) {
-                return (ListingRecord) s.merge(details);
+                return (ListingRecord) s.merge(listingRecord);
             }
         }
     }
 
     @Override
     public List<ListingRecord> listDirectory(String directoryPath) {
-        return null;
+        if (directoryPath == null) {
+            throw new IllegalArgumentException("directoryPath must not be null");
+        }
+
+        if (!directoryPath.isBlank()) {
+            var records = getByPath(directoryPath);
+            if (records.isEmpty()) {
+                throw new IllegalArgumentException("Directory '" + directoryPath + "' does not exist.");
+            }
+            // Add an ending slash to directoryPath, if it doesn't have one yet.
+            if (!directoryPath.endsWith("/")) {
+                directoryPath += "/";
+            }
+        }
+
+        return namedTypedQuery("ListingRecord.listDirectory")
+            .setParameter("path", directoryPath + "%")
+            .setParameter("pathWithTwoComponents", directoryPath + "%/%")
+            .getResultList();
     }
 
     @Override
@@ -96,7 +114,13 @@ public class LayerDatabaseImpl extends AbstractDAO<ListingRecord> implements Lay
 
     @Override
     public void addFile(long layerId, String filePath) {
-
+        addRecords(List.of(
+            new ListingRecord.Builder()
+                .layerId(layerId)
+                .path(filePath)
+                .type(Listing.Type.File)
+                .build()
+        ));
     }
 
     @Override

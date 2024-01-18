@@ -36,6 +36,8 @@ import javax.persistence.NamedQuery;
 )
 @NamedQuery(name = "ListingRecord.listAll",
             query = "SELECT l FROM listing_record l")
+@NamedQuery(name = "ListingRecord.listDirectory",
+            query = "SELECT l FROM listing_record l WHERE l.path LIKE :path AND l.path NOT LIKE :pathWithTwoComponents")
 public class ListingRecord {
 
     @Id

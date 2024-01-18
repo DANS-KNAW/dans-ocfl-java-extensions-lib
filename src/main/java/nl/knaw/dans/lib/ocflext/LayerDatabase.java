@@ -25,7 +25,7 @@ import java.util.List;
 public interface LayerDatabase {
 
     /**
-     * Lists the items in <code>directoryPath</code>. It takes into account the complete stack of layers.
+     * Lists the items in <code>directoryPath</code>. It takes into account the complete stack of layers. If the directory does not exist in any of the layers, an IllegalArgumentException is thrown.
      *
      * @param directoryPath the directory path relative to the storage root
      * @return the items in the directory
@@ -41,7 +41,7 @@ public interface LayerDatabase {
     List<ListingRecord> listRecursive(String directoryPath);
 
     /**
-     * Adds a directory to the database. Ancestor directories are added automatically, if they do not exist yet.
+     * Adds a directory to the database. Ancestor directories are added automatically, if they do not exist in the same layer yet.
      *
      * @param layerId the id of the layer that contains the directory
      * @param path    the path of the directory relative to the storage root

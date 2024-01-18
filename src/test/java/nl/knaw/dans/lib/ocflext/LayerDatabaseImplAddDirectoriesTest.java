@@ -15,31 +15,16 @@
  */
 package nl.knaw.dans.lib.ocflext;
 
-import io.dropwizard.testing.junit5.DAOTestExtension;
-import io.dropwizard.testing.junit5.DropwizardExtensionsSupport;
 import io.ocfl.core.storage.common.Listing;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.List;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@ExtendWith(DropwizardExtensionsSupport.class)
-public class LayerDatabaseImplAddDirectoriesTest {
 
-    private final DAOTestExtension daoTestExtension = DAOTestExtension.newBuilder()
-        .addEntityClass(ListingRecord.class)
-        .build();
-
-    private LayerDatabaseImpl dao;
-
-    @BeforeEach
-    public void setUp() throws Exception {
-        dao = new LayerDatabaseImpl(daoTestExtension.getSessionFactory());
-    }
+public class LayerDatabaseImplAddDirectoriesTest extends LayerDatabaseFixture {
 
     @Test
     public void addDirectories_should_add_directories() {
