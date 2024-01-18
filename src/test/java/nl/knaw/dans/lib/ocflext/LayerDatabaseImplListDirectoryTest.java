@@ -92,6 +92,28 @@ public class LayerDatabaseImplListDirectoryTest extends LayerDatabaseFixture {
     }
 
     @Test
+    public void listDirectory_should_return_latest_version_of_file_if_it_exists_in_multiple_layers() {
+        // Add some records to find
+        daoTestExtension.inTransaction(() -> {
+            saveDbRow(1L, "file1", Listing.Type.File);
+            saveDbRow(2L, "file1", Listing.Type.File);
+            saveDbRow(3L, "file1", Listing.Type.File);
+        });
+
+        assertThat(dao.listDirectory("")).asList()
+            .usingRecursiveFieldByFieldElementComparatorIgnoringFields("generatedId")
+            .containsExactlyInAnyOrder(
+                ListingRecord.builder()
+                    .layerId(3L)
+                    .path("file1")
+                    .type(Listing.Type.File)
+                    .build()
+            );
+    }
+
+
+
+    @Test
     public void listDirectory_should_throw_an_IllegalArgumentException_if_parameter_is_null() {
         assertThatThrownBy(() -> dao.listDirectory(null))
             .isInstanceOf(IllegalArgumentException.class)

@@ -36,8 +36,27 @@ import javax.persistence.NamedQuery;
 )
 @NamedQuery(name = "ListingRecord.listAll",
             query = "SELECT l FROM listing_record l")
-@NamedQuery(name = "ListingRecord.listDirectory",
-            query = "SELECT l FROM listing_record l WHERE l.path LIKE :path AND l.path NOT LIKE :pathWithTwoComponents")
+@NamedQuery(
+    name = "ListingRecord.listDirectory",
+    query = """
+        SELECT l
+        FROM listing_record l
+        WHERE l.path LIKE :path
+            AND l.path NOT LIKE :pathWithTwoComponents
+            AND l.layerId IN (SELECT MAX(l2.layerId)
+                              FROM listing_record l2
+                              WHERE l2.path LIKE :path AND l2.path NOT LIKE :pathWithTwoComponents GROUP BY l2.path)"""
+)
+@NamedQuery(
+    name = "ListingRecord.listRecursive",
+    query = """
+        SELECT l
+        FROM listing_record l
+        WHERE l.path LIKE :path
+            AND l.layerId IN (SELECT MAX(l2.layerId)
+                              FROM listing_record l2
+                              WHERE l2.path LIKE :path GROUP BY l2.path)"""
+)
 public class ListingRecord {
 
     @Id

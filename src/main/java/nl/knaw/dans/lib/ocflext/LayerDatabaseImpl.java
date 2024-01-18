@@ -45,6 +45,21 @@ public class LayerDatabaseImpl extends AbstractDAO<ListingRecord> implements Lay
 
     @Override
     public List<ListingRecord> listDirectory(String directoryPath) {
+        directoryPath = preprocessDirectoryArgument(directoryPath);
+        return namedTypedQuery("ListingRecord.listDirectory")
+            .setParameter("path", directoryPath + "%")
+            .setParameter("pathWithTwoComponents", directoryPath + "%/%")
+            .getResultList();
+    }
+
+    @Override
+    public List<ListingRecord> listRecursive(String directoryPath) {
+        return namedTypedQuery("ListingRecord.listRecursive")
+            .setParameter("path", preprocessDirectoryArgument(directoryPath) + "%")
+            .getResultList();
+    }
+
+    private String preprocessDirectoryArgument(String directoryPath) {
         if (directoryPath == null) {
             throw new IllegalArgumentException("directoryPath must not be null");
         }
@@ -59,17 +74,10 @@ public class LayerDatabaseImpl extends AbstractDAO<ListingRecord> implements Lay
                 directoryPath += "/";
             }
         }
-
-        return namedTypedQuery("ListingRecord.listDirectory")
-            .setParameter("path", directoryPath + "%")
-            .setParameter("pathWithTwoComponents", directoryPath + "%/%")
-            .getResultList();
+        return directoryPath;
     }
 
-    @Override
-    public List<ListingRecord> listRecursive(String directoryPath) {
-        return null;
-    }
+
 
     @Override
     public void addDirectories(long layerId, String path) {
