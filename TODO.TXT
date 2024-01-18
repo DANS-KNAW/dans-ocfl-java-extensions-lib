@@ -16,8 +16,8 @@
 
 TODO
 
-- Implement Layer with unit tests
-- Implement LayerManager with unit tests
+X Implement Layer with unit tests
 - Implement LayerDatabase with unit tests
+- Implement LayerManager with unit tests
 - Implement LayeredStorage with unit tests
 - Implement test with rocfl to test for various cases the resulting OCFL structure is valid (will require rocfl to be installed)

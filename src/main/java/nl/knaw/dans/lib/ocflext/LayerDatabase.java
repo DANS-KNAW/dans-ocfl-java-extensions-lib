@@ -48,7 +48,7 @@ public interface LayerDatabase {
      */
     void addDirectories(long layerId, String path);
 
-    void addRecords(long layerId, List<ListingRecord> records);
+    void addRecords(List<ListingRecord> records);
 
     /**
      * Adds a file to the database. The record for the parent directory must already exist.

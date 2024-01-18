@@ -16,15 +16,26 @@
 package nl.knaw.dans.lib.ocflext;
 
 import io.ocfl.core.storage.common.Listing;
+import lombok.Builder;
 import lombok.Data;
 
 import javax.persistence.Column;
+import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Lob;
+import javax.persistence.NamedQuery;
 
 @Data
+@Builder(builderClassName = "Builder")
+@Entity(name = "listing_record")
+@NamedQuery(
+    name = "ListingRecord.getByPath",
+    query = "SELECT l FROM listing_record l WHERE l.path = :path"
+)
+@NamedQuery(name = "ListingRecord.listAll",
+            query = "SELECT l FROM listing_record l")
 public class ListingRecord {
 
     @Id
@@ -32,13 +43,13 @@ public class ListingRecord {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long generatedId;
 
-    @Column(name = "layer_id")
+    @Column(name = "layer_id", nullable = false)
     private Long layerId;
 
-    @Column
+    @Column(nullable = false)
     private String path;
 
-    @Column
+    @Column(nullable = false)
     private Listing.Type type;
 
     @Column

@@ -169,10 +169,10 @@ public class LayeredStorage implements Storage {
         try (var s = Files.walk(source)) {
             s.forEach(path -> {
                 var destPath = destination + "/" + source.relativize(path);
-                var r = new ListingRecord();
-                r.setLayerId(layerManager.getTopLayer().getId());
-                r.setPath(destPath);
-                r.setType(getListingType(path));
+                var r = new ListingRecord.Builder()
+                    .layerId(layerManager.getTopLayer().getId())
+                    .path(destPath)
+                    .type(getListingType(path)).build();
                 if (databaseBackedFilesFilter.accept(destPath)) {
                     byte[] content = readToString(destPath).getBytes(StandardCharsets.UTF_8);
                     log.debug("Adding content of file {} to database; file length = {}", destPath, content.length);
@@ -181,7 +181,8 @@ public class LayeredStorage implements Storage {
                 records.add(r);
             });
         }
-        layerDatabase.addRecords(layerManager.getTopLayer().getId(), records);
+        layerDatabase.addRecords(records);
+        // TODO: rollback move on disk if database update fails
     }
 
     private Listing.Type getListingType(Path path) {
