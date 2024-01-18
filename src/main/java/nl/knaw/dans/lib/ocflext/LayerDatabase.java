@@ -15,6 +15,7 @@
  */
 package nl.knaw.dans.lib.ocflext;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
@@ -30,7 +31,7 @@ public interface LayerDatabase {
      * @param directoryPath the directory path relative to the storage root
      * @return the items in the directory
      */
-    List<ListingRecord> listDirectory(String directoryPath);
+    List<ListingRecord> listDirectory(String directoryPath) throws IOException;
 
     /**
      * Lists the items in <code>directoryPath</code> recursively. It takes into account the complete stack of layers.
@@ -38,7 +39,7 @@ public interface LayerDatabase {
      * @param directoryPath the directory path relative to the storage root
      * @return the items in the directory and its subdirectories
      */
-    List<ListingRecord> listRecursive(String directoryPath);
+    List<ListingRecord> listRecursive(String directoryPath) throws IOException;
 
     /**
      * Adds a directory to the database. Ancestor directories are added automatically, if they do not exist in the same layer yet.

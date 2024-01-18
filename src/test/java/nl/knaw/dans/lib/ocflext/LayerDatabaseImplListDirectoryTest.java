@@ -18,18 +18,20 @@ package nl.knaw.dans.lib.ocflext;
 import io.ocfl.core.storage.common.Listing;
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.NotDirectoryException;
+
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 public class LayerDatabaseImplListDirectoryTest extends LayerDatabaseFixture {
 
     @Test
-    public void listDirectory_should_return_empty_list_if_nothing_found() {
+    public void listDirectory_should_return_empty_list_if_nothing_found() throws Exception {
         assertThat(dao.listDirectory("")).asList().isEmpty();
     }
 
     @Test
-    public void listDirectory_should_return_list_of_items_in_root_folder_if_parameter_is_empty_string() {
+    public void listDirectory_should_return_list_of_items_in_root_folder_if_parameter_is_empty_string() throws Exception {
         // Add some records to find
         daoTestExtension.inTransaction(() -> {
             saveDbRow(1L, "subdir", Listing.Type.Directory);
@@ -60,7 +62,7 @@ public class LayerDatabaseImplListDirectoryTest extends LayerDatabaseFixture {
     }
 
     @Test
-    public void listDirectory_should_return_list_of_items_in_subdir_folder_if_parameter_path_to_that_folder() {
+    public void listDirectory_should_return_list_of_items_in_subdir_folder_if_parameter_path_to_that_folder() throws Exception {
         // Add some records to find
         daoTestExtension.inTransaction(() -> {
             saveDbRow(1L, "subdir", Listing.Type.Directory);
@@ -92,7 +94,7 @@ public class LayerDatabaseImplListDirectoryTest extends LayerDatabaseFixture {
     }
 
     @Test
-    public void listDirectory_should_return_latest_version_of_file_if_it_exists_in_multiple_layers() {
+    public void listDirectory_should_return_latest_version_of_file_if_it_exists_in_multiple_layers() throws Exception {
         // Add some records to find
         daoTestExtension.inTransaction(() -> {
             saveDbRow(1L, "file1", Listing.Type.File);
@@ -111,13 +113,23 @@ public class LayerDatabaseImplListDirectoryTest extends LayerDatabaseFixture {
             );
     }
 
-
-
     @Test
     public void listDirectory_should_throw_an_IllegalArgumentException_if_parameter_is_null() {
         assertThatThrownBy(() -> dao.listDirectory(null))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessage("directoryPath must not be null");
+    }
+
+    @Test
+    public void listDirectory_should_throw_a_NotDirectoryException_if_parameter_is_not_a_directory() {
+        // Add some records to find
+        daoTestExtension.inTransaction(() -> {
+            saveDbRow(1L, "file1", Listing.Type.File);
+        });
+
+        assertThatThrownBy(() -> dao.listDirectory("file1"))
+            .isInstanceOf(NotDirectoryException.class)
+            .hasMessage("file1");
     }
 
 }

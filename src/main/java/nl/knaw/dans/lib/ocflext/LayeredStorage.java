@@ -16,6 +16,7 @@
 package nl.knaw.dans.lib.ocflext;
 
 import io.ocfl.api.OcflFileRetriever;
+import io.ocfl.api.exception.OcflIOException;
 import io.ocfl.api.model.DigestAlgorithm;
 import io.ocfl.core.storage.common.Listing;
 import io.ocfl.core.storage.common.OcflObjectRootDirIterator;
@@ -25,6 +26,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringWriter;
@@ -60,19 +62,29 @@ public class LayeredStorage implements Storage {
 
     @Override
     public List<Listing> listDirectory(String directoryPath) {
-        return layerDatabase
-            .listDirectory(directoryPath)
-            .stream()
-            .map(ListingRecord::toListing)
-            .collect(Collectors.toList());
+        try {
+            return layerDatabase
+                .listDirectory(directoryPath)
+                .stream()
+                .map(ListingRecord::toListing)
+                .collect(Collectors.toList());
+        }
+        catch (IOException e) {
+            throw OcflIOException.from(e);
+        }
     }
 
     @Override
     public List<Listing> listRecursive(String directoryPath) {
-        return layerDatabase.listRecursive(directoryPath)
-            .stream()
-            .map(ListingRecord::toListing)
-            .collect(Collectors.toList());
+        try {
+            return layerDatabase.listRecursive(directoryPath)
+                .stream()
+                .map(ListingRecord::toListing)
+                .collect(Collectors.toList());
+        }
+        catch (IOException e) {
+            throw OcflIOException.from(e);
+        }
     }
 
     @Override
@@ -256,7 +268,13 @@ public class LayeredStorage implements Storage {
 
     @Override
     public void deleteEmptyDirsDown(String path) {
-        var containedListings = layerDatabase.listRecursive(path);
+        List<ListingRecord> containedListings;
+        try {
+            containedListings = layerDatabase.listRecursive(path);
+        }
+        catch (IOException e) {
+            throw OcflIOException.from(e);
+        }
         // Sort by descending path length, so that we start with the deepest directories
         containedListings.sort((listingRecord1, listingRecord2) ->
             Integer.compare(listingRecord2.getPath().length(), listingRecord1.getPath().length()));

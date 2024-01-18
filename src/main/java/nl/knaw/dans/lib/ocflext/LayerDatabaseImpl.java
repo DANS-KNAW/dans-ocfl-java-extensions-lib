@@ -19,7 +19,9 @@ import io.dropwizard.hibernate.AbstractDAO;
 import io.ocfl.core.storage.common.Listing;
 import org.hibernate.SessionFactory;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.NotDirectoryException;
 import java.util.List;
 
 public class LayerDatabaseImpl extends AbstractDAO<ListingRecord> implements LayerDatabase {
@@ -44,7 +46,7 @@ public class LayerDatabaseImpl extends AbstractDAO<ListingRecord> implements Lay
     }
 
     @Override
-    public List<ListingRecord> listDirectory(String directoryPath) {
+    public List<ListingRecord> listDirectory(String directoryPath) throws IOException{
         directoryPath = preprocessDirectoryArgument(directoryPath);
         return namedTypedQuery("ListingRecord.listDirectory")
             .setParameter("path", directoryPath + "%")
@@ -53,13 +55,13 @@ public class LayerDatabaseImpl extends AbstractDAO<ListingRecord> implements Lay
     }
 
     @Override
-    public List<ListingRecord> listRecursive(String directoryPath) {
+    public List<ListingRecord> listRecursive(String directoryPath) throws IOException {
         return namedTypedQuery("ListingRecord.listRecursive")
             .setParameter("path", preprocessDirectoryArgument(directoryPath) + "%")
             .getResultList();
     }
 
-    private String preprocessDirectoryArgument(String directoryPath) {
+    private String preprocessDirectoryArgument(String directoryPath) throws IOException {
         if (directoryPath == null) {
             throw new IllegalArgumentException("directoryPath must not be null");
         }
@@ -68,6 +70,9 @@ public class LayerDatabaseImpl extends AbstractDAO<ListingRecord> implements Lay
             var records = getByPath(directoryPath);
             if (records.isEmpty()) {
                 throw new IllegalArgumentException("Directory '" + directoryPath + "' does not exist.");
+            }
+            if (records.stream().anyMatch(r -> r.getType() != Listing.Type.Directory)) {
+                throw new NotDirectoryException(directoryPath);
             }
             // Add an ending slash to directoryPath, if it doesn't have one yet.
             if (!directoryPath.endsWith("/")) {
