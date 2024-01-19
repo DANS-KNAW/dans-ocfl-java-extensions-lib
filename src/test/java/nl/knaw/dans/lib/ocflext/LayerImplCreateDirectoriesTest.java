@@ -47,19 +47,18 @@ public class LayerImplCreateDirectoriesTest extends AbstractTestWithTestDir {
     }
 
     @Test
-    public void createDirectories_should_throw_IllegalArgumentException_if_path_is_empty() throws Exception {
-        var layer = new LayerImpl(1, testDir.resolve("staging"), new ZipArchive(testDir.resolve("test.zip")));
-        assertThatThrownBy(() -> layer.createDirectories(""))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessage("Path cannot be empty");
-    }
-
-    @Test
     public void createDirectories_should_throw_IllegalArgumentException_if_path_is_blank() throws Exception {
         var layer = new LayerImpl(1, testDir.resolve("staging"), new ZipArchive(testDir.resolve("test.zip")));
         assertThatThrownBy(() -> layer.createDirectories(" "))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessage("Path cannot be blank");
+    }
+
+    @Test
+    public void createDirectories_should_create_staging_dir_if_path_is_empty() throws Exception {
+        var layer = new LayerImpl(1, testDir.resolve("staging"), new ZipArchive(testDir.resolve("test.zip")));
+        layer.createDirectories("");
+        assertThat(testDir.resolve("staging")).exists();
     }
 
     @Test

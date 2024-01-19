@@ -15,6 +15,8 @@
  */
 package nl.knaw.dans.lib.ocflext;
 
+import io.ocfl.core.storage.common.Listing;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
@@ -45,7 +47,7 @@ public interface Layer {
 
     void write(String filePath, InputStream content) throws IOException;
 
-    void moveDirectoryInto(Path source, String destination) throws IOException;
+    List<Listing> moveDirectoryInto(Path source, String destination) throws IOException;
 
     boolean fileExists(String path) throws IOException;
 

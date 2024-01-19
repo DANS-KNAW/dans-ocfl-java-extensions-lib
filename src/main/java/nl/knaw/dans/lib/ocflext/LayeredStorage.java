@@ -17,6 +17,7 @@ package nl.knaw.dans.lib.ocflext;
 
 import io.ocfl.api.OcflFileRetriever;
 import io.ocfl.api.exception.OcflIOException;
+import io.ocfl.api.exception.OcflNoSuchFileException;
 import io.ocfl.api.model.DigestAlgorithm;
 import io.ocfl.core.storage.common.Listing;
 import io.ocfl.core.storage.common.OcflObjectRootDirIterator;
@@ -33,6 +34,7 @@ import java.io.OutputStream;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -176,7 +178,6 @@ public class LayeredStorage implements Storage {
     @Override
     @SneakyThrows
     public void moveDirectoryInto(Path source, String destination) {
-        layerManager.getTopLayer().moveDirectoryInto(source, destination);
         // Create listing records for all files in the moved directory
         var records = new ArrayList<ListingRecord>();
         try (var s = Files.walk(source)) {
@@ -186,7 +187,7 @@ public class LayeredStorage implements Storage {
                     .layerId(layerManager.getTopLayer().getId())
                     .path(destPath)
                     .type(getListingType(path)).build();
-                if (databaseBackedFilesFilter.accept(destPath)) {
+                if (new InventoryFilter2().accept(path)) { // FIXME: reuse InventoryFilter2
                     byte[] content = readToString(destPath).getBytes(StandardCharsets.UTF_8);
                     log.debug("Adding content of file {} to database; file length = {}", destPath, content.length);
                     r.setContent(content);
@@ -194,6 +195,7 @@ public class LayeredStorage implements Storage {
                 records.add(r);
             });
         }
+        layerManager.getTopLayer().moveDirectoryInto(source, destination);
         layerDatabase.saveRecords(records);
         // TODO: rollback move on disk if database update fails
     }

@@ -21,8 +21,10 @@ import io.ocfl.core.storage.common.Listing;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.util.regex.Pattern;
+
 @ExtendWith(DropwizardExtensionsSupport.class)
-public abstract class LayerDatabaseFixture {
+public abstract class LayerDatabaseFixture extends AbstractTestWithTestDir {
     protected final DAOTestExtension daoTestExtension = DAOTestExtension.newBuilder()
         .addEntityClass(ListingRecord.class)
         .build();
@@ -30,6 +32,7 @@ public abstract class LayerDatabaseFixture {
 
     @BeforeEach
     public void setUp() throws Exception {
+        super.setUp();
         dao = new LayerDatabaseImpl(daoTestExtension.getSessionFactory());
     }
 
@@ -39,5 +42,13 @@ public abstract class LayerDatabaseFixture {
             .path(path)
             .type(type);
         dao.save(details.build());
+    }
+
+    protected LayeredStorage createLayeredStorage(LayerManager layerManager) {
+        return new LayeredStorage(
+            layerManager,
+            dao,
+            new InventoryFilter(stagingDir)
+        );
     }
 }

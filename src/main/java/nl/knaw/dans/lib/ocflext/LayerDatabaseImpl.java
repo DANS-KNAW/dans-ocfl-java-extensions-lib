@@ -20,6 +20,7 @@ import io.ocfl.core.storage.common.Listing;
 import org.hibernate.SessionFactory;
 
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.NotDirectoryException;
 import java.util.List;
 
@@ -68,7 +69,7 @@ public class LayerDatabaseImpl extends AbstractDAO<ListingRecord> implements Lay
         if (!directoryPath.isBlank()) {
             var records = getByPath(directoryPath);
             if (records.isEmpty()) {
-                throw new IllegalArgumentException("Directory '" + directoryPath + "' does not exist.");
+                throw new NoSuchFileException(directoryPath);
             }
             if (records.stream().anyMatch(r -> r.getType() != Listing.Type.Directory)) {
                 throw new NotDirectoryException(directoryPath);

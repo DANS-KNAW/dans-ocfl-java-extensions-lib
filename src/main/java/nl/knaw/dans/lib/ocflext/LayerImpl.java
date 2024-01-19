@@ -15,6 +15,7 @@
  */
 package nl.knaw.dans.lib.ocflext;
 
+import io.ocfl.core.storage.common.Listing;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ import org.apache.commons.io.FileUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -119,20 +121,38 @@ class LayerImpl implements Layer {
     public void write(String filePath, InputStream content) throws IOException {
         checkOpen();
         validatePath(filePath);
-        ensureStagingDirExists();
+        ensureStagingDirExists(); // TODO: not needed? Is taken care of by initialization of storage
         Files.copy(content, stagingDir.resolve(filePath));
     }
 
     @Override
-    public void moveDirectoryInto(Path source, String destination) throws IOException {
+    public List<Listing> moveDirectoryInto(Path source, String destination) throws IOException {
         checkOpen();
         ensureStagingDirExists();
         validatePath(destination);
-        Files.move(source, stagingDir.resolve(destination));
+        var destinationPath = stagingDir.resolve(destination);
+        Files.move(source, destinationPath);
+        try (var s = Files.walk(destinationPath)) {
+            return s.map(path -> getListing(path, destination + "/" + source.relativize(path))).toList();
+        }
     }
+
+    private Listing getListing(Path path, String relativePath) {
+        if (Files.isDirectory(path)) {
+            return Listing.directory(path.getFileName().toString());
+        }
+        else if (Files.isRegularFile(path)) {
+            return Listing.file(path.getFileName().toString());
+        }
+        else {
+            return Listing.other(path.getFileName().toString());
+        }
+    }
+
 
     @Override
     public boolean fileExists(String path) throws IOException {
+        validatePath(path);
         if (archive.isArchived()) {
             return archive.fileExists(path);
         }
@@ -163,9 +183,7 @@ class LayerImpl implements Layer {
     private void validatePath(String path) {
         if (path == null)
             throw new IllegalArgumentException("Path cannot be null");
-        if (path.isEmpty())
-            throw new IllegalArgumentException("Path cannot be empty");
-        if (path.isBlank())
+        if (path.isBlank() && !path.isEmpty())
             throw new IllegalArgumentException("Path cannot be blank");
         var pathInStagingDir = stagingDir.resolve(path).normalize();
         // Check if the path is outside the staging dir

@@ -28,6 +28,10 @@ public abstract class AbstractTestWithTestDir {
     protected final Path testDir = Path.of("target/test")
         .resolve(getClass().getSimpleName());
 
+    protected final Path stagingDir = testDir.resolve("layer_staging");
+
+    protected final Path archiveDir = testDir.resolve("layer_archive");
+
     @BeforeEach
     public void setUp() throws Exception {
         FileUtils.deleteDirectory(testDir.toFile());

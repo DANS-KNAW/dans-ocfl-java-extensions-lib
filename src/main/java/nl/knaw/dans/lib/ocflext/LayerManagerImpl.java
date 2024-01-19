@@ -22,7 +22,6 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
-@RequiredArgsConstructor
 public class LayerManagerImpl implements LayerManager {
 
     private final Map<Long, Layer> layers = new HashMap<>();
@@ -34,6 +33,12 @@ public class LayerManagerImpl implements LayerManager {
     private final Path archiveRoot;
 
     private Layer topLayer;
+
+    public LayerManagerImpl(@NonNull Path stagingRoot, @NonNull Path archiveRoot) {
+        this.stagingRoot = stagingRoot;
+        this.archiveRoot = archiveRoot;
+        newTopLayer();
+    }
 
     @Override
     public void newTopLayer() {
