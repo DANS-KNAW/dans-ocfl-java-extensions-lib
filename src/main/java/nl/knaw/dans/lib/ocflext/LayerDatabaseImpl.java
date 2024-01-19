@@ -20,7 +20,6 @@ import io.ocfl.core.storage.common.Listing;
 import org.hibernate.SessionFactory;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.NotDirectoryException;
 import java.util.List;
 
@@ -143,17 +142,29 @@ public class LayerDatabaseImpl extends AbstractDAO<ListingRecord> implements Lay
 
     @Override
     public List<Long> findLayersContaining(String path) {
-        return null;
+        return namedQuery("ListingRecord.findLayersContaining")
+            .setParameter("path", path)
+            .getResultList().stream().map(o -> (Long) o).toList();
+    }
+
+    @Override
+    public byte[] readContentFromDatabase(String filePath) {
+        var records = getByPath(filePath);
+        if (records.isEmpty()) {
+            throw new IllegalArgumentException("File '" + filePath + "' does not exist.");
+        }
+        if (records.stream().anyMatch(r -> r.getType() != Listing.Type.File)) {
+            throw new IllegalArgumentException("'" + filePath + "' is not a file.");
+        }
+        var record = records.stream().max((r1, r2) -> (int) (r1.getLayerId() - r2.getLayerId())).get();
+        return record.getContent();
     }
 
     @Override
     public boolean isContentStoredInDatabase(String filePath) {
-        return false;
-    }
-
-    @Override
-    public InputStream readContentFromDatabase(String filePath) {
-        return null;
+        return namedQuery("ListingRecord.isContentStoredInDatabase")
+            .setParameter("path", filePath)
+            .getResultList().stream().anyMatch(o -> (Boolean) o);
     }
 
     public List<ListingRecord> listAll() {

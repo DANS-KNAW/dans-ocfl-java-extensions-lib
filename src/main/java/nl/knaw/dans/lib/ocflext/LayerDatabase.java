@@ -16,7 +16,6 @@
 package nl.knaw.dans.lib.ocflext;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
 
 /**
@@ -69,6 +68,12 @@ public interface LayerDatabase {
      */
     List<Long> findLayersContaining(String path);
 
+    /**
+     * Returns whether the file content is stored in the database for the newest layer that contains it.
+     *
+     * @param filePath path relative to the root of the storage
+     * @return true if the content is stored in the database, false otherwise
+     */
     boolean isContentStoredInDatabase(String filePath);
 
     /**
@@ -77,5 +82,5 @@ public interface LayerDatabase {
      * @param filePath path relative to the root of the storage
      * @return the input stream
      */
-    InputStream readContentFromDatabase(String filePath);
+    byte[] readContentFromDatabase(String filePath);
 }

@@ -26,6 +26,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -106,7 +107,7 @@ public class LayeredStorage implements Storage {
     @Override
     public InputStream read(String filePath) {
         if (layerDatabase.isContentStoredInDatabase(filePath)) {
-            return layerDatabase.readContentFromDatabase(filePath);
+            return new ByteArrayInputStream(layerDatabase.readContentFromDatabase(filePath));
         }
         else {
             return layerDatabase.findLayersContaining(filePath).stream()

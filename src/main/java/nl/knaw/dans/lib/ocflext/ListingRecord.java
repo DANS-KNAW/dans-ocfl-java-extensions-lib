@@ -57,6 +57,22 @@ import javax.persistence.NamedQuery;
                               FROM listing_record l2
                               WHERE l2.path LIKE :path GROUP BY l2.path)"""
 )
+@NamedQuery(name = "ListingRecord.findLayersContaining",
+            query = """
+                SELECT DISTINCT l.layerId
+                FROM listing_record l
+                WHERE l.path = :path"""
+)
+@NamedQuery(
+    name = "ListingRecord.isContentStoredInDatabase",
+    query = """
+        SELECT l.content IS NOT NULL
+        FROM listing_record l
+        WHERE l.path = :path
+            AND l.layerId IN (SELECT MAX(l2.layerId)
+                              FROM listing_record l2
+                              WHERE l2.path = :path GROUP BY l2.path)"""
+)
 public class ListingRecord {
 
     @Id
