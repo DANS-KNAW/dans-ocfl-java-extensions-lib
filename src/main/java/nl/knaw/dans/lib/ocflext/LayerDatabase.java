@@ -45,8 +45,9 @@ public interface LayerDatabase {
      *
      * @param layerId the id of the layer that contains the directory
      * @param path    the path of the directory relative to the storage root
+     * @return
      */
-    void addDirectories(long layerId, String path);
+    List<ListingRecord> addDirectories(long layerId, String path);
 
     void saveRecords(List<ListingRecord> records);
 

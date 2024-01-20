@@ -26,6 +26,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Lob;
 import javax.persistence.NamedQuery;
+import java.nio.file.Path;
 
 @Data
 @Builder(builderClassName = "Builder")
@@ -93,8 +94,19 @@ public class ListingRecord {
     @Lob
     private byte[] content;
 
-    public Listing toListing() {
-        return new Listing(type, path);
+    /**
+     * Converts this record to a Listing, relative to the given path.
+     *
+     * @param relativeTo the path to which the listing should be relative
+     * @return the listing
+     * @throws IllegalArgumentException if the path is not a descendant of the relativeTo path
+     */
+    public Listing toListing(String relativeTo) {
+        Path relativeToPath = Path.of(relativeTo);
+        var relativePath = relativeToPath.relativize(Path.of(path));
+        if (relativePath.startsWith("..")) {
+            throw new IllegalArgumentException("The path " + relativePath + " is not a descendant of " + relativeTo);
+        }
+        return new Listing(type, relativePath.toString());
     }
-
 }

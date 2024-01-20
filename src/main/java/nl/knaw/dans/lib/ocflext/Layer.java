@@ -45,6 +45,13 @@ public interface Layer {
      */
     void archive();
 
+    /**
+     * Writes the content of the given input stream to the file at the given path. Not allowed when the layer is closed. If the file already exists, it is overwritten.
+     *
+     * @param filePath the path of the file relative to the storage root
+     * @param content  the content of the file
+     * @throws IOException if the file cannot be written
+     */
     void write(String filePath, InputStream content) throws IOException;
 
     List<Listing> moveDirectoryInto(Path source, String destination) throws IOException;

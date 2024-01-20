@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2023 DANS - Data Archiving and Networked Services (info@dans.knaw.nl)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package nl.knaw.dans.lib.ocflext;
 
 import io.ocfl.api.model.User;
@@ -8,9 +23,12 @@ import io.ocfl.core.extension.storage.layout.config.NTupleOmitPrefixStorageLayou
 import io.ocfl.core.storage.common.Storage;
 import lombok.SneakyThrows;
 import org.apache.commons.compress.archivers.tar.TarFile;
+import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -19,7 +37,7 @@ import java.util.stream.Collectors;
 import static io.ocfl.api.model.ObjectVersionId.head;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RountTripTest extends LayerDatabaseFixture {
+public class RoundTripTest extends LayerDatabaseFixture {
     private final Path inputBaseDir = Path.of("src/test/resources/input-roundtrip");
 
     @Test
@@ -37,8 +55,9 @@ public class RountTripTest extends LayerDatabaseFixture {
         layerManager.newTopLayer();
         var outDir = Files.createDirectories(testDir.resolve("out"));
         // TODO: wait for background thread to finish archiving before extracting OR make executor configurable, so that we can process synchronously.
+        copyDirectoriesInOrder(stagingDir, outDir);
         // extractTarFilesInOrder(testDir, outDir);
-        // assertThat(repoValid(outDir)).isTrue();
+        assertThat(repoValid(outDir)).isTrue();
     }
 
     private void extractTarFilesInOrder(Path inputDir, Path outDir) throws IOException {
@@ -49,6 +68,42 @@ public class RountTripTest extends LayerDatabaseFixture {
                 .sorted()
                 .collect(Collectors.toList());
             extractTarFiles(tars, outDir);
+        }
+    }
+
+    /**
+     * Copies the contents of each of the subdirectories under inputDir, alphabetically sorted, to outDir. The subdirectories are copied recursively, so that the directory structure is preserved.
+     * Existing files are overwritten.
+     *
+     * @param inputDir the directory containing the directories to copy
+     * @param outDir   the directory to copy the directories to
+     * @throws IOException if copying fails
+     */
+    private void copyDirectoriesInOrder(Path inputDir, Path outDir) throws IOException {
+        try (var stream = Files.walk(inputDir)) {
+            var dirs = stream
+                .filter(Files::isDirectory)
+                .filter(path -> path.getParent().equals(inputDir))
+                .sorted()
+                .toList();
+            for (var dir : dirs) {
+                copyDirectoryContents(dir, outDir);
+            }
+        }
+    }
+
+    public void copyDirectoryContents(Path src, Path dest) throws IOException {
+        try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(src)) {
+            for (Path path : directoryStream) {
+                File srcFile = path.toFile();
+                File destFile = new File(dest.toFile(), srcFile.getName());
+                if (srcFile.isDirectory()) {
+                    FileUtils.copyDirectory(srcFile, destFile);
+                }
+                else {
+                    FileUtils.copyFile(srcFile, destFile);
+                }
+            }
         }
     }
 

@@ -22,6 +22,7 @@ import org.hibernate.SessionFactory;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.NotDirectoryException;
+import java.util.ArrayList;
 import java.util.List;
 
 public class LayerDatabaseImpl extends AbstractDAO<ListingRecord> implements LayerDatabase {
@@ -39,9 +40,7 @@ public class LayerDatabaseImpl extends AbstractDAO<ListingRecord> implements Lay
             return persist(listingRecord);
         }
         else {
-            try (var s = currentSession()) {
-                return (ListingRecord) s.merge(listingRecord);
-            }
+            return (ListingRecord) currentSession().merge(listingRecord);
         }
     }
 
@@ -83,9 +82,10 @@ public class LayerDatabaseImpl extends AbstractDAO<ListingRecord> implements Lay
     }
 
     @Override
-    public void addDirectories(long layerId, String path) {
+    public List<ListingRecord> addDirectories(long layerId, String path) {
         String[] pathComponents = path.split("/");
         String currentPath = "";
+        List<ListingRecord> newRecords = new ArrayList<>();
 
         for (String component : pathComponents) {
             currentPath = currentPath.isEmpty() ? component : currentPath + "/" + component;
@@ -105,9 +105,11 @@ public class LayerDatabaseImpl extends AbstractDAO<ListingRecord> implements Lay
                     .path(currentPath)
                     .type(Listing.Type.Directory)
                     .build();
+                newRecords.add(newRecord);
                 save(newRecord);
             }
         }
+        return newRecords;
     }
 
     private List<ListingRecord> getByPath(String path) {
@@ -118,6 +120,9 @@ public class LayerDatabaseImpl extends AbstractDAO<ListingRecord> implements Lay
 
     @Override
     public void saveRecords(List<ListingRecord> records) {
+        if (records.isEmpty()) {
+            return;
+        }
         for (ListingRecord record : records) {
             save(record);
         }

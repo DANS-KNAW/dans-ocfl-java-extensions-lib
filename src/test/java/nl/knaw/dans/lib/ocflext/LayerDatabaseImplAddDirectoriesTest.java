@@ -52,8 +52,30 @@ public class LayerDatabaseImplAddDirectoriesTest extends LayerDatabaseFixture {
 
     @Test
     public void addDirectories_should_not_add_directories_if_they_already_exist_in_the_same_layer() {
-        daoTestExtension.inTransaction(() -> dao.addDirectories(1L, "root/child/grandchild"));
-        daoTestExtension.inTransaction(() -> dao.addDirectories(1L, "root/child/grandchild"));
+        var newRecords = daoTestExtension.inTransaction(() -> dao.addDirectories(1L, "root/child/grandchild"));
+        assertThat(newRecords)
+            .usingRecursiveFieldByFieldElementComparatorIgnoringFields("generatedId")
+            .contains(ListingRecord.builder()
+                    .layerId(1L)
+                    .path("root")
+                    .type(Listing.Type.Directory)
+                    .build(),
+                ListingRecord.builder()
+                    .layerId(1L)
+                    .path("root/child")
+                    .type(Listing.Type.Directory)
+                    .build(),
+                ListingRecord.builder()
+                    .layerId(1L)
+                    .path("root/child/grandchild")
+                    .type(Listing.Type.Directory)
+                    .build()
+            );
+        newRecords = daoTestExtension.inTransaction(() -> dao.addDirectories(1L, "root/child/grandchild"));
+        // No new directories should have been added
+        assertThat(newRecords)
+            .isEmpty();
+
         // Check that the directories were added, ignoring the generatedId
         assertThat(dao.listAll())
             .usingRecursiveFieldByFieldElementComparatorIgnoringFields("generatedId")

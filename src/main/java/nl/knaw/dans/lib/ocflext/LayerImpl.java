@@ -27,6 +27,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 
 @RequiredArgsConstructor
@@ -122,7 +123,7 @@ class LayerImpl implements Layer {
         checkOpen();
         validatePath(filePath);
         ensureStagingDirExists(); // TODO: not needed? Is taken care of by initialization of storage
-        Files.copy(content, stagingDir.resolve(filePath));
+        Files.copy(content, stagingDir.resolve(filePath), StandardCopyOption.REPLACE_EXISTING);
     }
 
     @Override

@@ -69,7 +69,7 @@ public class LayeredStorage implements Storage {
             return layerDatabase
                 .listDirectory(directoryPath)
                 .stream()
-                .map(ListingRecord::toListing)
+                .map(r -> r.toListing(directoryPath))
                 .collect(Collectors.toList());
         }
         catch (IOException e) {
@@ -82,7 +82,7 @@ public class LayeredStorage implements Storage {
         try {
             return layerDatabase.listRecursive(directoryPath)
                 .stream()
-                .map(ListingRecord::toListing)
+                .map(r -> r.toListing(directoryPath))
                 .collect(Collectors.toList());
         }
         catch (IOException e) {
@@ -178,6 +178,13 @@ public class LayeredStorage implements Storage {
     @Override
     @SneakyThrows
     public void moveDirectoryInto(Path source, String destination) {
+        var parent = Path.of(destination).getParent();
+        var newListingRecordsUpToDestination = layerDatabase.addDirectories(
+            layerManager.getTopLayer().getId(),
+            parent.toString());
+        if (!newListingRecordsUpToDestination.isEmpty()) {
+            layerManager.getTopLayer().createDirectories(parent.toString());
+        }
         // Create listing records for all files in the moved directory
         var records = new ArrayList<ListingRecord>();
         try (var s = Files.walk(source)) {
@@ -197,6 +204,7 @@ public class LayeredStorage implements Storage {
         }
         layerManager.getTopLayer().moveDirectoryInto(source, destination);
         layerDatabase.saveRecords(records);
+        layerDatabase.saveRecords(newListingRecordsUpToDestination);
         // TODO: rollback move on disk if database update fails
     }
 
