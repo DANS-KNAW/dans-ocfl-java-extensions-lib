@@ -24,7 +24,6 @@ import org.apache.commons.io.FileUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -149,7 +148,6 @@ class LayerImpl implements Layer {
             return Listing.other(path.getFileName().toString());
         }
     }
-
 
     @Override
     public boolean fileExists(String path) throws IOException {

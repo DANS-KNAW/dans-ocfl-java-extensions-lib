@@ -16,11 +16,13 @@
 package nl.knaw.dans.lib.ocflext;
 
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 public class LayerManagerImpl implements LayerManager {
 
@@ -32,20 +34,36 @@ public class LayerManagerImpl implements LayerManager {
     @NonNull
     private final Path archiveRoot;
 
+    private final Executor archivingExecutor;
+
     private Layer topLayer;
 
-    public LayerManagerImpl(@NonNull Path stagingRoot, @NonNull Path archiveRoot) {
+    public LayerManagerImpl(@NonNull Path stagingRoot, @NonNull Path archiveRoot, Executor archivingExecutor) {
         this.stagingRoot = stagingRoot;
         this.archiveRoot = archiveRoot;
+        this.archivingExecutor = Objects.requireNonNullElseGet(archivingExecutor, Executors::newSingleThreadExecutor);
         newTopLayer();
     }
 
     @Override
     public void newTopLayer() {
+        var oldTopLayer = topLayer;
         long id = System.currentTimeMillis();
-        Layer layer = new LayerImpl(id, stagingRoot.resolve(Long.toString(id)), new ZipArchive(archiveRoot.resolve(Long.toString(id))));
+        Layer layer = new LayerImpl(id, stagingRoot.resolve(Long.toString(id)), new ZipArchive(archiveRoot.resolve(Long.toString(id) + ".zip")));
         layers.put(id, layer);
         topLayer = layer;
+        if (oldTopLayer != null) {
+            oldTopLayer.close();
+            archivingExecutor.execute(() -> {
+                try {
+                    oldTopLayer.archive();
+                    // TODO: store the result of the archiving process in the database (use ExecutorService?)
+                }
+                catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        }
     }
 
     @Override

@@ -24,13 +24,11 @@ import java.nio.file.Path;
 import static io.ocfl.api.OcflConstants.OBJECT_NAMASTE_PREFIX;
 
 @AllArgsConstructor
-public class InventoryFilter implements Filter<String> {
-    private final Path ocflStorageRoot;
+public class InventoryFilter implements Filter<Path> {
 
     @Override
-    public boolean accept(String s) {
-        var path = ocflStorageRoot.resolve(s);
-        return (isOcflObjectRoot(path) || isOcflObjectRoot(path.getParent())) && path.getFileName().toString().equals("inventory.json"); // TODO: also accept inventory.json.sha512 etc
+    public boolean accept(Path path) {
+        return (isOcflObjectRoot(path.getParent())) && path.getFileName().toString().equals("inventory.json"); // TODO: also accept inventory.json.sha512 etc
     }
 
     @SneakyThrows

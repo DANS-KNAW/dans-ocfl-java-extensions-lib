@@ -17,7 +17,6 @@ package nl.knaw.dans.lib.ocflext;
 
 import io.ocfl.api.OcflFileRetriever;
 import io.ocfl.api.exception.OcflIOException;
-import io.ocfl.api.exception.OcflNoSuchFileException;
 import io.ocfl.api.model.DigestAlgorithm;
 import io.ocfl.core.storage.common.Listing;
 import io.ocfl.core.storage.common.OcflObjectRootDirIterator;
@@ -34,7 +33,6 @@ import java.io.OutputStream;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -61,7 +59,7 @@ public class LayeredStorage implements Storage {
      * @param databaseBackedFilesFilter the database backed files filter
      */
     @Builder.Default
-    private Filter<String> databaseBackedFilesFilter = path -> false;
+    private Filter<Path> databaseBackedFilesFilter = path -> false;
 
     @Override
     public List<Listing> listDirectory(String directoryPath) {
@@ -194,7 +192,7 @@ public class LayeredStorage implements Storage {
                     .layerId(layerManager.getTopLayer().getId())
                     .path(destPath)
                     .type(getListingType(path)).build();
-                if (new InventoryFilter2().accept(path)) { // FIXME: reuse InventoryFilter2
+                if (databaseBackedFilesFilter.accept(path)) {
                     byte[] content = readToString(destPath).getBytes(StandardCharsets.UTF_8);
                     log.debug("Adding content of file {} to database; file length = {}", destPath, content.length);
                     r.setContent(content);

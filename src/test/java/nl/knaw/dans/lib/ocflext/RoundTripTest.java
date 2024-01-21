@@ -15,6 +15,7 @@
  */
 package nl.knaw.dans.lib.ocflext;
 
+import io.dropwizard.util.DirectExecutorService;
 import io.ocfl.api.model.User;
 import io.ocfl.api.model.VersionInfo;
 import io.ocfl.core.OcflRepositoryBuilder;
@@ -22,6 +23,7 @@ import io.ocfl.core.extension.OcflExtensionConfig;
 import io.ocfl.core.extension.storage.layout.config.NTupleOmitPrefixStorageLayoutConfig;
 import io.ocfl.core.storage.common.Storage;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.tar.TarFile;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;
@@ -31,19 +33,21 @@ import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import static io.ocfl.api.model.ObjectVersionId.head;
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Slf4j
 public class RoundTripTest extends LayerDatabaseFixture {
     private final Path inputBaseDir = Path.of("src/test/resources/input-roundtrip");
 
     @Test
     public void create_repo_with_object_versions_in_multiple_layers() throws Exception {
         var inputDir = inputBaseDir.resolve("multi-layer");
-        var layerManager = new LayerManagerImpl(stagingDir, archiveDir);
+        var layerManager = new LayerManagerImpl(stagingDir, archiveDir, new DirectExecutorService());
         var storage = createLayeredStorage(layerManager);
         var repo = createRepoBuilder(storage, new NTupleOmitPrefixStorageLayoutConfig().setDelimiter(":").setTupleSize(3)).build();
         repo.putObject(head("urn:00000001"), inputDir.resolve("01first"), createVersionInfo("first"));
@@ -54,9 +58,7 @@ public class RoundTripTest extends LayerDatabaseFixture {
         repo.putObject(head("urn:00000001"), inputDir.resolve("04fourth"), createVersionInfo("fourth"));
         layerManager.newTopLayer();
         var outDir = Files.createDirectories(testDir.resolve("out"));
-        // TODO: wait for background thread to finish archiving before extracting OR make executor configurable, so that we can process synchronously.
-        copyDirectoriesInOrder(stagingDir, outDir);
-        // extractTarFilesInOrder(testDir, outDir);
+        extractZipFilesInOrder(archiveDir, outDir);
         assertThat(repoValid(outDir)).isTrue();
     }
 
@@ -68,6 +70,17 @@ public class RoundTripTest extends LayerDatabaseFixture {
                 .sorted()
                 .collect(Collectors.toList());
             extractTarFiles(tars, outDir);
+        }
+    }
+
+    private void extractZipFilesInOrder(Path inputDir, Path outDir) throws IOException {
+        try (var stream = Files.walk(inputDir)) {
+            var zips = stream
+                .filter(Files::isRegularFile)
+                .filter(path -> path.toString().endsWith(".zip"))
+                .sorted()
+                .collect(Collectors.toList());
+            extractZipFiles(zips, outDir);
         }
     }
 
@@ -116,7 +129,7 @@ public class RoundTripTest extends LayerDatabaseFixture {
     @SneakyThrows
     private void extractTarFiles(List<Path> tars, Path outDir) {
         for (var tar : tars) {
-            System.out.println("Extracting " + tar);
+            log.debug("Extracting {}", tar);
             try (var tarFile = new TarFile(tar)) {
                 tarFile.getEntries().forEach(entry -> {
                     try {
@@ -129,6 +142,33 @@ public class RoundTripTest extends LayerDatabaseFixture {
                             // Overwrite existing files
                             Files.deleteIfExists(outPath);
                             Files.copy(tarFile.getInputStream(entry), outPath);
+                        }
+                    }
+                    catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+            }
+        }
+    }
+
+    @SneakyThrows
+    private void extractZipFiles(List<Path> zips, Path outDir) {
+        for (var zip : zips) {
+            System.out.println("Extracting " + zip);
+            try (var zipFile = new org.apache.commons.compress.archivers.zip.ZipFile(zip.toFile())) {
+                var entryList = Collections.list(zipFile.getEntries());
+                entryList.forEach(entry -> {
+                    try {
+                        var outPath = outDir.resolve(entry.getName());
+                        if (entry.isDirectory()) {
+                            Files.createDirectories(outPath);
+                        }
+                        else {
+                            Files.createDirectories(outPath.getParent());
+                            // Overwrite existing files
+                            Files.deleteIfExists(outPath);
+                            Files.copy(zipFile.getInputStream(entry), outPath);
                         }
                     }
                     catch (IOException e) {
