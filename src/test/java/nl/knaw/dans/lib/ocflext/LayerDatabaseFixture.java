@@ -26,7 +26,7 @@ public abstract class LayerDatabaseFixture extends AbstractTestWithTestDir {
     protected final DAOTestExtension daoTestExtension = DAOTestExtension.newBuilder()
         .addEntityClass(ListingRecord.class)
         .build();
-    protected LayerDatabaseImpl dao;
+    protected LayerDatabase dao;
 
     @BeforeEach
     public void setUp() throws Exception {

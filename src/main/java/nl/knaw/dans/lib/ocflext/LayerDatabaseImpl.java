@@ -31,6 +31,7 @@ public class LayerDatabaseImpl extends AbstractDAO<ListingRecord> implements Lay
         super(sessionFactory);
     }
 
+    @Override
     public ListingRecord save(ListingRecord listingRecord) {
         if (listingRecord.getGeneratedId() == null) {
             return persist(listingRecord);
@@ -47,6 +48,13 @@ public class LayerDatabaseImpl extends AbstractDAO<ListingRecord> implements Lay
     @Override
     public List<ListingRecord> listDirectory(String directoryPath) throws IOException {
         directoryPath = preprocessDirectoryArgument(directoryPath);
+        // Treating the root directory as a special case, to prevent the root directory itself from being returned
+        // as one of its own children.
+        if (directoryPath.isEmpty()) {
+            return namedTypedQuery("ListingRecord.listRootDirectory")
+                .setParameter("pathWithTwoComponents", "%/%")
+                .getResultList();
+        }
         return namedTypedQuery("ListingRecord.listDirectory")
             .setParameter("path", directoryPath + "%")
             .setParameter("pathWithTwoComponents", directoryPath + "%/%")
@@ -83,7 +91,10 @@ public class LayerDatabaseImpl extends AbstractDAO<ListingRecord> implements Lay
 
     @Override
     public List<ListingRecord> addDirectories(long layerId, String path) {
-        String[] pathComponents = path.split("/");
+        String[] pathComponentsWithoutRoot = path.split("/");
+        String[] pathComponents = new String[pathComponentsWithoutRoot.length + 1];
+        pathComponents[0] = "";
+        System.arraycopy(pathComponentsWithoutRoot, 0, pathComponents, 1, pathComponentsWithoutRoot.length);
         String currentPath = "";
         List<ListingRecord> newRecords = new ArrayList<>();
 
@@ -173,7 +184,15 @@ public class LayerDatabaseImpl extends AbstractDAO<ListingRecord> implements Lay
             .getResultList().stream().anyMatch(o -> (Boolean) o);
     }
 
+    @Override
     public List<ListingRecord> listAll() {
         return super.list(namedTypedQuery("ListingRecord.listAll"));
+    }
+
+    @Override
+    public boolean hasPathLike(String pathPattern) {
+        return namedQuery("ListingRecord.hasPathLike")
+            .setParameter("pathPattern", pathPattern)
+            .getResultList().stream().anyMatch(o -> (Boolean) o);
     }
 }

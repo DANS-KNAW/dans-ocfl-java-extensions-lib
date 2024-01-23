@@ -123,7 +123,9 @@ public class LayeredStorage implements Storage {
     @Override
     public String readToString(String filePath) {
         StringWriter writer = new StringWriter();
-        IOUtils.copy(read(filePath), writer, StandardCharsets.UTF_8);
+        try (InputStream is = read(filePath)) {
+            IOUtils.copy(is, writer, StandardCharsets.UTF_8);
+        }
         return writer.toString();
     }
 

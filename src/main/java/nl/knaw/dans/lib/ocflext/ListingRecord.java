@@ -37,6 +37,20 @@ import java.nio.file.Path;
 )
 @NamedQuery(name = "ListingRecord.listAll",
             query = "SELECT l FROM listing_record l")
+/*
+ * Not sure if listRootDirectory and listDirectory can be combined into one query.
+ */
+@NamedQuery(
+    name = "ListingRecord.listRootDirectory",
+    query = """
+        SELECT l
+        FROM listing_record l
+        WHERE l.path != ''
+            AND l.path NOT LIKE :pathWithTwoComponents
+            AND l.layerId IN (SELECT MAX(l2.layerId)
+                              FROM listing_record l2
+                              WHERE l2.path != '' AND l2.path NOT LIKE :pathWithTwoComponents GROUP BY l2.path)"""
+)
 @NamedQuery(
     name = "ListingRecord.listDirectory",
     query = """
@@ -73,6 +87,14 @@ import java.nio.file.Path;
             AND l.layerId IN (SELECT MAX(l2.layerId)
                               FROM listing_record l2
                               WHERE l2.path = :path GROUP BY l2.path)"""
+)
+@NamedQuery(
+    name = "ListingRecord.hasPathLike",
+    query = """
+        SELECT COUNT(l) > 0
+        FROM listing_record l
+        WHERE l.path LIKE :pathPattern"""
+
 )
 public class ListingRecord {
 

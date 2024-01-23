@@ -34,6 +34,11 @@ public class LayerDatabaseImplAddDirectoriesTest extends LayerDatabaseFixture {
             .containsExactlyInAnyOrder(
                 ListingRecord.builder()
                     .layerId(1L)
+                    .path("")
+                    .type(Listing.Type.Directory)
+                    .build(),
+                ListingRecord.builder()
+                    .layerId(1L)
                     .path("root")
                     .type(Listing.Type.Directory)
                     .build(),
@@ -55,7 +60,13 @@ public class LayerDatabaseImplAddDirectoriesTest extends LayerDatabaseFixture {
         var newRecords = daoTestExtension.inTransaction(() -> dao.addDirectories(1L, "root/child/grandchild"));
         assertThat(newRecords)
             .usingRecursiveFieldByFieldElementComparatorIgnoringFields("generatedId")
-            .contains(ListingRecord.builder()
+            .contains(
+                ListingRecord.builder()
+                    .layerId(1L)
+                    .path("")
+                    .type(Listing.Type.Directory)
+                    .build(),
+                ListingRecord.builder()
                     .layerId(1L)
                     .path("root")
                     .type(Listing.Type.Directory)
@@ -82,6 +93,11 @@ public class LayerDatabaseImplAddDirectoriesTest extends LayerDatabaseFixture {
             .containsExactlyInAnyOrder(
                 ListingRecord.builder()
                     .layerId(1L)
+                    .path("")
+                    .type(Listing.Type.Directory)
+                    .build(),
+                ListingRecord.builder()
+                    .layerId(1L)
                     .path("root")
                     .type(Listing.Type.Directory)
                     .build(),
@@ -106,6 +122,17 @@ public class LayerDatabaseImplAddDirectoriesTest extends LayerDatabaseFixture {
         assertThat(dao.listAll())
             .usingRecursiveFieldByFieldElementComparatorIgnoringFields("generatedId")
             .containsExactlyInAnyOrder(
+                // Note, that each layer contains the root directory
+                ListingRecord.builder()
+                    .layerId(1L)
+                    .path("")
+                    .type(Listing.Type.Directory)
+                    .build(),
+                ListingRecord.builder()
+                    .layerId(2L)
+                    .path("")
+                    .type(Listing.Type.Directory)
+                    .build(),
                 ListingRecord.builder()
                     .layerId(1L)
                     .path("root")

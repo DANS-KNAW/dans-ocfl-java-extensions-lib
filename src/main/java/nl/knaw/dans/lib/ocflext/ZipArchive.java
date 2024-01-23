@@ -26,6 +26,7 @@ import org.apache.commons.compress.archivers.zip.ZipFile;
 import org.apache.commons.compress.utils.IOUtils;
 
 import java.io.BufferedOutputStream;
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -43,12 +44,36 @@ public class ZipArchive implements Archive {
     @Getter
     private boolean archived = false;
 
+    private static class EntryInputStream extends InputStream implements Closeable {
+        private final ZipFile zipFile;
+        private final ZipArchiveEntry entry;
+        private final InputStream inputStream;
+
+        public EntryInputStream(ZipFile zipFile, ZipArchiveEntry entry) throws IOException {
+            this.zipFile = zipFile;
+            this.entry = entry;
+            this.inputStream = zipFile.getInputStream(entry);
+        }
+
+        @Override
+        public int read() throws IOException {
+            return inputStream.read();
+        }
+
+        @Override
+        public void close() throws IOException {
+            inputStream.close();
+            zipFile.close();
+        }
+    }
+
+
     @Override
     public InputStream getInputStreamFor(String filePath) throws IOException {
         @SuppressWarnings("resource") // The caller is responsible for closing the stream
         ZipFile zipFile = new ZipFile(this.zipFile.toFile());
         ZipArchiveEntry entry = zipFile.getEntry(filePath);
-        return zipFile.getInputStream(entry);
+        return new EntryInputStream(zipFile, entry);
     }
 
     @Override

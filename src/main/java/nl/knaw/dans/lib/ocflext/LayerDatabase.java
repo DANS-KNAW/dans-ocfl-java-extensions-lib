@@ -84,4 +84,24 @@ public interface LayerDatabase {
      * @return the input stream
      */
     byte[] readContentFromDatabase(String filePath);
+
+    /**
+     * Retrieves a list of all the records in the database. This method is intended for testing purposes only.
+     * In a real application, the number of records in the database will be too large to retrieve them all at once.
+     *
+     * @return a list of all the records in the database
+     */
+    List<ListingRecord> listAll();
+
+
+    /**
+     * Returns whether the path pattern matches any path in the database.
+     *
+     * @param pathPattern a path pattern that may contain wildcards
+     * @return true if the pattern matches any path in the database, false otherwise
+     */
+    boolean hasPathLike(String pathPattern);
+
+
+    ListingRecord save(ListingRecord record);
 }

@@ -168,7 +168,9 @@ public class RoundTripTest extends LayerDatabaseFixture {
                             Files.createDirectories(outPath.getParent());
                             // Overwrite existing files
                             Files.deleteIfExists(outPath);
-                            Files.copy(zipFile.getInputStream(entry), outPath);
+                            try(var in = zipFile.getInputStream(entry)) {
+                                Files.copy(in, outPath);
+                            }
                         }
                     }
                     catch (IOException e) {
