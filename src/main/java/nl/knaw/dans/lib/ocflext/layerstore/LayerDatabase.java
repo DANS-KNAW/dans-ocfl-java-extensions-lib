@@ -40,6 +40,14 @@ public interface LayerDatabase {
     void deleteRecordsById(long... ids);
 
     /**
+     * Retrieves a stream of all the records in the database.
+     *
+     * @return a list of all the records in the database
+     */
+    Stream<ListingRecord2> getAllRecords();
+
+
+    /**
      * Lists the items in <code>directoryPath</code>. It takes into account the complete stack of layers. If the directory does not exist in any of the layers, an IllegalArgumentException is thrown.
      *
      * @param directoryPath the directory path relative to the storage root
@@ -62,7 +70,7 @@ public interface LayerDatabase {
      * @param path    the path of the directory relative to the storage root
      * @return the records that were added to the database for directories that did not exist yet
      */
-    List<ListingRecord2> addDirectories(String path);
+    List<ListingRecord2> addDirectory(String path);
 
     /**
      * Finds all the layers that contain the given path.
@@ -80,12 +88,6 @@ public interface LayerDatabase {
      */
     List<ListingRecord2> getRecordsByPath(String path);
 
-    /**
-     * Retrieves a list of all the records in the database.
-     *
-     * @return a list of all the records in the database
-     */
-    Stream<ListingRecord2> getAllRecords();
 
     /**
      * Returns whether the path pattern matches any path in the database.

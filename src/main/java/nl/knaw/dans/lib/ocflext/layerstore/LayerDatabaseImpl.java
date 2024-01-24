@@ -83,7 +83,7 @@ public class LayerDatabaseImpl extends AbstractDAO<ListingRecord2> implements La
     }
 
     @Override
-    public List<ListingRecord2> addDirectories(String path) {
+    public List<ListingRecord2> addDirectory(String path) {
         String[] pathComponents = getPathComponents(path);
         String currentPath = "";
         List<ListingRecord2> newRecords = new ArrayList<>();
