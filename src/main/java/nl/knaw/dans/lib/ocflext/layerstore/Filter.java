@@ -13,19 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.lib.ocflext;
+package nl.knaw.dans.lib.ocflext.layerstore;
 
-import io.ocfl.core.storage.common.Listing;
-import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
-public class ListingRecordTest {
-
-    @Test
-    public void toListing_should_throw_an_IllegalArgumentException_if_relativeTo_is_not_a_parent_of_the_record_path() {
-        assertThrows(IllegalArgumentException.class, () -> new ListingRecord(1L, 1L, "root/child/grandchild", Listing.Type.Directory, null)
-            .toListing("root/other"));
-    }
-
+public interface Filter<T> {
+    boolean accept(T t);
 }
