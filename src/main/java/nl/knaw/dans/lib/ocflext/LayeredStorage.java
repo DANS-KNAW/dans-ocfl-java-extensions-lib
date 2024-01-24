@@ -17,6 +17,7 @@ package nl.knaw.dans.lib.ocflext;
 
 import io.ocfl.api.OcflFileRetriever;
 import io.ocfl.api.exception.OcflIOException;
+import io.ocfl.api.io.FixityCheckInputStream;
 import io.ocfl.api.model.DigestAlgorithm;
 import io.ocfl.core.storage.common.Listing;
 import io.ocfl.core.storage.common.OcflObjectRootDirIterator;
@@ -37,6 +38,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -95,7 +97,7 @@ public class LayeredStorage implements Storage {
 
     @Override
     public OcflObjectRootDirIterator iterateObjects() {
-        return null;
+        return new LayeredStorageOcflObjectRootDirIterator(layerDatabase);
     }
 
     @Override
@@ -103,108 +105,145 @@ public class LayeredStorage implements Storage {
         return !layerDatabase.findLayersContaining(filePath).isEmpty();
     }
 
-    @SneakyThrows
     @Override
     public InputStream read(String filePath) {
-        if (layerDatabase.isContentStoredInDatabase(filePath)) {
-            return new ByteArrayInputStream(layerDatabase.readContentFromDatabase(filePath));
+        try {
+            if (layerDatabase.isContentStoredInDatabase(filePath)) {
+                return new ByteArrayInputStream(layerDatabase.readContentFromDatabase(filePath));
+            }
+            else {
+                return layerDatabase.findLayersContaining(filePath).stream()
+                    .sorted(Collections.reverseOrder()) // Get the newest layer first
+                    .map(layerManager::getLayer)
+                    .findFirst()
+                    .orElseThrow(() -> new RuntimeException("No layer found for file: " + filePath))
+                    .read(filePath);
+            }
         }
-        else {
-            return layerDatabase.findLayersContaining(filePath).stream()
-                .sorted(Collections.reverseOrder()) // Get the newest layer first
-                .map(layerManager::getLayer)
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("No layer found for file: " + filePath))
-                .read(filePath);
+        catch (IOException e) {
+            throw OcflIOException.from(e);
         }
     }
 
-    @SneakyThrows
     @Override
     public String readToString(String filePath) {
-        StringWriter writer = new StringWriter();
-        try (InputStream is = read(filePath)) {
-            IOUtils.copy(is, writer, StandardCharsets.UTF_8);
+        try {
+            StringWriter writer = new StringWriter();
+            try (InputStream is = read(filePath)) {
+                IOUtils.copy(is, writer, StandardCharsets.UTF_8);
+            }
+            return writer.toString();
         }
-        return writer.toString();
+        catch (IOException e) {
+            throw OcflIOException.from(e);
+        }
     }
 
     @Override
     public OcflFileRetriever readLazy(String filePath, DigestAlgorithm algorithm, String digest) {
-        return null;
+        return () -> new FixityCheckInputStream(read(filePath), algorithm, digest);
     }
 
-    @SneakyThrows
     @Override
     public void write(String filePath, byte[] content, String mediaType) {
-        layerManager.getTopLayer().write(filePath, IOUtils.toInputStream(new String(content), StandardCharsets.UTF_8));
-        layerDatabase.addFile(layerManager.getTopLayer().getId(), filePath);
+        try {
+            layerManager.getTopLayer().write(filePath, IOUtils.toInputStream(new String(content), StandardCharsets.UTF_8));
+            layerDatabase.addFile(layerManager.getTopLayer().getId(), filePath);
+        }
+        catch (IOException e) {
+            throw OcflIOException.from(e);
+        }
     }
 
-    @SneakyThrows
     @Override
     public void createDirectories(String path) {
-        layerManager.getTopLayer().createDirectories(path);
-        layerDatabase.addDirectories(layerManager.getTopLayer().getId(), path);
-    }
-
-    @Override
-    @SneakyThrows
-    public void copyDirectoryOutOf(String source, Path destination) {
-        for (ListingRecord listingRecord : layerDatabase.listRecursive(source)) { // TODO: sorted ascending by length, so that we are guaranteed to create parent directories before contained files?
-            if (listingRecord.getType().equals(Listing.Type.Directory)) {
-                Files.createDirectories(destination.resolve(listingRecord.getPath()));
-            }
-            try (OutputStream os = Files.newOutputStream(destination.resolve(listingRecord.getPath()))) {
-                IOUtils.copy(read(listingRecord.getPath()), os);
-            }
+        try {
+            layerManager.getTopLayer().createDirectories(path);
+            layerDatabase.addDirectories(layerManager.getTopLayer().getId(), path);
+        }
+        catch (IOException e) {
+            throw OcflIOException.from(e);
         }
     }
 
-    @SneakyThrows
+    @Override
+    public void copyDirectoryOutOf(String source, Path destination) {
+        try {
+            var records = layerDatabase.listRecursive(source);
+            // Sort by ascending path length, so that we start with the deepest directories
+            records.sort(Comparator.comparingInt(listingRecord -> listingRecord.getPath().length()));
+            for (ListingRecord listingRecord : records) {
+                if (listingRecord.getType().equals(Listing.Type.Directory)) {
+                    Files.createDirectories(destination.resolve(listingRecord.getPath()));
+                }
+                else {
+                    try (OutputStream os = Files.newOutputStream(destination.resolve(listingRecord.getPath()))) {
+                        IOUtils.copy(read(listingRecord.getPath()), os);
+                    }
+                }
+            }
+        }
+        catch (IOException e) {
+            throw OcflIOException.from(e);
+        }
+    }
+
     @Override
     public void copyFileInto(Path source, String destination, String mediaType) {
-        layerManager.getTopLayer().write(destination, Files.newInputStream(source));
-        layerDatabase.addFile(layerManager.getTopLayer().getId(), destination);
+        try {
+            layerManager.getTopLayer().write(destination, Files.newInputStream(source));
+            layerDatabase.addFile(layerManager.getTopLayer().getId(), destination);
+        }
+        catch (IOException e) {
+            throw OcflIOException.from(e);
+        }
     }
 
-    @SneakyThrows
     @Override
     public void copyFileInternal(String sourceFile, String destinationFile) {
-        layerManager.getTopLayer().write(destinationFile, read(sourceFile));
-        layerDatabase.addFile(layerManager.getTopLayer().getId(), destinationFile);
+        try {
+            layerManager.getTopLayer().write(destinationFile, read(sourceFile));
+            layerDatabase.addFile(layerManager.getTopLayer().getId(), destinationFile);
+        }
+        catch (IOException e) {
+            throw OcflIOException.from(e);
+        }
     }
 
     @Override
-    @SneakyThrows
     public void moveDirectoryInto(Path source, String destination) {
-        var parent = Path.of(destination).getParent();
-        var newListingRecordsUpToDestination = layerDatabase.addDirectories(
-            layerManager.getTopLayer().getId(),
-            parent.toString());
-        if (!newListingRecordsUpToDestination.isEmpty()) {
-            layerManager.getTopLayer().createDirectories(parent.toString());
+        try {
+            var parent = Path.of(destination).getParent();
+            var newListingRecordsUpToDestination = layerDatabase.addDirectories(
+                layerManager.getTopLayer().getId(),
+                parent.toString());
+            if (!newListingRecordsUpToDestination.isEmpty()) {
+                layerManager.getTopLayer().createDirectories(parent.toString());
+            }
+            // Create listing records for all files in the moved directory
+            var records = new ArrayList<ListingRecord>();
+            try (var s = Files.walk(source)) {
+                s.forEach(path -> {
+                    var destPath = destination + "/" + source.relativize(path);
+                    var r = new ListingRecord.Builder()
+                        .layerId(layerManager.getTopLayer().getId())
+                        .path(destPath)
+                        .type(getListingType(path)).build();
+                    if (databaseBackedFilesFilter.accept(path)) {
+                        byte[] content = readToString(destPath).getBytes(StandardCharsets.UTF_8);
+                        log.debug("Adding content of file {} to database; file length = {}", destPath, content.length);
+                        r.setContent(content);
+                    }
+                    records.add(r);
+                });
+            }
+            layerManager.getTopLayer().moveDirectoryInto(source, destination);
+            layerDatabase.saveRecords(records);
+            layerDatabase.saveRecords(newListingRecordsUpToDestination);
         }
-        // Create listing records for all files in the moved directory
-        var records = new ArrayList<ListingRecord>();
-        try (var s = Files.walk(source)) {
-            s.forEach(path -> {
-                var destPath = destination + "/" + source.relativize(path);
-                var r = new ListingRecord.Builder()
-                    .layerId(layerManager.getTopLayer().getId())
-                    .path(destPath)
-                    .type(getListingType(path)).build();
-                if (databaseBackedFilesFilter.accept(path)) {
-                    byte[] content = readToString(destPath).getBytes(StandardCharsets.UTF_8);
-                    log.debug("Adding content of file {} to database; file length = {}", destPath, content.length);
-                    r.setContent(content);
-                }
-                records.add(r);
-            });
+        catch (IOException e) {
+            throw OcflIOException.from(e);
         }
-        layerManager.getTopLayer().moveDirectoryInto(source, destination);
-        layerDatabase.saveRecords(records);
-        layerDatabase.saveRecords(newListingRecordsUpToDestination);
         // TODO: rollback move on disk if database update fails
     }
 
@@ -223,21 +262,24 @@ public class LayeredStorage implements Storage {
     }
 
     @Override
-    @SneakyThrows
     public void moveDirectoryInternal(String source, String destination) {
-        checkAllSourceFilesInTopLayer(source, "moveDirectoryInternal");
-        layerManager.getTopLayer().moveDirectoryInternal(source, destination);
-        // Update listing records for all files in the moved directory
-        var records = layerDatabase.listRecursive(source);
-        for (ListingRecord record : records) {
-            var destPath = destination + "/" + source.substring(source.lastIndexOf("/") + 1) + record.getPath().substring(source.length());
-            record.setPath(destPath);
+        try {
+            checkAllSourceFilesInTopLayer(source, "moveDirectoryInternal");
+            layerManager.getTopLayer().moveDirectoryInternal(source, destination);
+            // Update listing records for all files in the moved directory
+            var records = layerDatabase.listRecursive(source);
+            for (ListingRecord record : records) {
+                var destPath = destination + "/" + source.substring(source.lastIndexOf("/") + 1) + record.getPath().substring(source.length());
+                record.setPath(destPath);
+            }
+            layerDatabase.saveRecords(records);
         }
-        layerDatabase.saveRecords(records);
+        catch (IOException e) {
+            throw OcflIOException.from(e);
+        }
     }
 
-    @SneakyThrows
-    private void checkAllSourceFilesInTopLayer(String source, String methodName) {
+    private void checkAllSourceFilesInTopLayer(String source, String methodName) throws IOException {
         for (ListingRecord listingRecord : layerDatabase.listRecursive(source)) {
             if (!layerManager.getTopLayer().fileExists(listingRecord.getPath())) {
                 throw new IllegalStateException("File " + listingRecord.getPath() + " is not in the top layer. " + methodName
@@ -247,11 +289,15 @@ public class LayeredStorage implements Storage {
     }
 
     @Override
-    @SneakyThrows
     public void deleteDirectory(String path) {
-        checkAllSourceFilesInTopLayer(path, "deleteDirectory");
-        layerManager.getTopLayer().deleteDirectory(path);
-        layerDatabase.deleteRecords(layerDatabase.listRecursive(path));
+        try {
+            checkAllSourceFilesInTopLayer(path, "deleteDirectory");
+            layerManager.getTopLayer().deleteDirectory(path);
+            layerDatabase.deleteRecords(layerDatabase.listRecursive(path));
+        }
+        catch (IOException e) {
+            throw OcflIOException.from(e);
+        }
     }
 
     @Override
@@ -260,7 +306,6 @@ public class LayeredStorage implements Storage {
     }
 
     @Override
-    @SneakyThrows
     public void deleteFiles(Collection<String> paths) {
         // Build a map from layer to paths in that layer
         var layerPaths = new HashMap<Long, List<String>>();
@@ -270,10 +315,15 @@ public class LayeredStorage implements Storage {
                 layerPaths.computeIfAbsent(layerId, k -> new ArrayList<>()).add(path);
             }
         }
-        // Delete the files in each layer
-        for (var entry : layerPaths.entrySet()) {
-            layerManager.getLayer(entry.getKey())
-                .deleteFiles(entry.getValue());
+        try {
+            // Delete the files in each layer
+            for (var entry : layerPaths.entrySet()) {
+                layerManager.getLayer(entry.getKey())
+                    .deleteFiles(entry.getValue());
+            }
+        }
+        catch (IOException e) {
+            throw OcflIOException.from(e);
         }
     }
 
