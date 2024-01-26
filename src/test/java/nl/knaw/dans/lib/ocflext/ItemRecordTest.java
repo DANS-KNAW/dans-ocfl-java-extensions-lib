@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class ListingRecord2Test {
+public class ItemRecordTest {
 
     @Test
     public void toListing_should_throw_an_IllegalArgumentException_if_relativeTo_is_not_a_parent_of_the_record_path() {

@@ -27,14 +27,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
-public class LayerDatabaseImpl extends AbstractDAO<ListingRecord2> implements LayerDatabase {
+import static nl.knaw.dans.lib.ocflext.layerstore.Item.Type;
+
+public class LayerDatabaseImpl extends AbstractDAO<ItemRecord> implements LayerDatabase {
 
     public LayerDatabaseImpl(SessionFactory sessionFactory) {
         super(sessionFactory);
     }
 
     @Override
-    public void saveRecords(ListingRecord2... records) {
+    public void saveRecords(ItemRecord... records) {
         for (var record : records) {
             // If the record has no generatedId, then it is new and we can persist it.
             if (record.getGeneratedId() == null) {
@@ -60,44 +62,44 @@ public class LayerDatabaseImpl extends AbstractDAO<ListingRecord2> implements La
     }
 
     @Override
-    public List<ListingRecord2> listDirectory(String directoryPath) throws IOException {
+    public List<Item> listDirectory(String directoryPath) throws IOException {
         directoryPath = preprocessDirectoryArgument(directoryPath);
         // Treating the root directory as a special case, to prevent the root directory itself from being returned
         // as one of its own children.
         if (directoryPath.isEmpty()) {
             return namedTypedQuery("ListingRecord2.listRootDirectory")
                 .setParameter("pathWithTwoComponents", "%/%")
-                .getResultList();
+                .getResultList().stream().map(ItemRecord::toItem).toList();
         }
         return namedTypedQuery("ListingRecord2.listDirectory")
             .setParameter("path", directoryPath + "%")
             .setParameter("pathWithTwoComponents", directoryPath + "%/%")
-            .getResultList();
+            .getResultList().stream().map(ItemRecord::toItem).toList();
     }
 
     @Override
-    public List<ListingRecord2> listRecursive(String directoryPath) throws IOException {
+    public List<Item> listRecursive(String directoryPath) throws IOException {
         return namedTypedQuery("ListingRecord2.listRecursive")
             .setParameter("path", preprocessDirectoryArgument(directoryPath) + "%")
-            .getResultList();
+            .getResultList().stream().map(ItemRecord::toItem).toList();
     }
 
     @Override
-    public List<ListingRecord2> addDirectory(String path) {
+    public List<ItemRecord> addDirectory(String path) {
         String[] pathComponents = getPathComponents(path);
         String currentPath = "";
-        List<ListingRecord2> newRecords = new ArrayList<>();
+        List<ItemRecord> newRecords = new ArrayList<>();
 
         for (String component : pathComponents) {
             currentPath = currentPath.isEmpty() ? component : currentPath + "/" + component;
-            List<ListingRecord2> records = getRecordsByPath(currentPath);
+            List<ItemRecord> records = getRecordsByPath(currentPath);
             checkRecordsOfSameType(records);
             var recordsInLayer = records.stream().filter(r -> r.getLayerId() == getTopLayerId()).toList();
             if (recordsInLayer.isEmpty()) {
-                ListingRecord2 newRecord = new ListingRecord2.Builder()
+                ItemRecord newRecord = new ItemRecord.Builder()
                     .layerId(getTopLayerId())
                     .path(currentPath)
-                    .type(Listing.Type.Directory)
+                    .type(Type.Directory)
                     .build();
                 newRecords.add(newRecord);
                 saveRecords(newRecord);
@@ -114,7 +116,7 @@ public class LayerDatabaseImpl extends AbstractDAO<ListingRecord2> implements La
         return pathComponents;
     }
 
-    private void checkRecordsOfSameType(List<ListingRecord2> records) {
+    private void checkRecordsOfSameType(List<ItemRecord> records) {
         for (var record : records) {
             if (record.getType() != records.get(0).getType()) {
                 throw new IllegalStateException("Encountered records of different types in: " + records);
@@ -123,7 +125,7 @@ public class LayerDatabaseImpl extends AbstractDAO<ListingRecord2> implements La
     }
 
     private long getTopLayerId() {
-        return namedTypedQuery("ListingRecord2.getTopLayerId")
+        return namedTypedQuery("ItemRecord.getTopLayerId")
             .getSingleResult().getLayerId();
     }
 
@@ -135,15 +137,15 @@ public class LayerDatabaseImpl extends AbstractDAO<ListingRecord2> implements La
     }
 
     @Override
-    public List<ListingRecord2> getRecordsByPath(String path) {
+    public List<ItemRecord> getRecordsByPath(String path) {
         return namedTypedQuery("ListingRecord2.getRecordsByPath")
             .setParameter("path", path)
             .getResultList();
     }
 
     @Override
-    public Stream<ListingRecord2> getAllRecords() {
-        TypedQuery<ListingRecord2> query = namedTypedQuery("ListingRecord2.getAllRecords");
+    public Stream<ItemRecord> getAllRecords() {
+        TypedQuery<ItemRecord> query = namedTypedQuery("ListingRecord2.getAllRecords");
         return query.getResultStream();
     }
 
@@ -162,10 +164,10 @@ public class LayerDatabaseImpl extends AbstractDAO<ListingRecord2> implements La
         if (!directoryPath.isBlank()) {
             var records = getRecordsByPath(directoryPath);
             if (records.isEmpty()) {
-                throw new NoSuchFileException(directoryPath);
+                throw new IllegalArgumentException("No such directory: " + directoryPath);
             }
-            if (records.stream().anyMatch(r -> r.getType() != Listing.Type.Directory)) {
-                throw new NotDirectoryException(directoryPath);
+            if (records.stream().anyMatch(r -> r.getType() != Type.Directory)) {
+                throw new IllegalArgumentException("Not a directory: " + directoryPath);
             }
             // Add an ending slash to directoryPath, if it doesn't have one yet.
             if (!directoryPath.endsWith("/")) {

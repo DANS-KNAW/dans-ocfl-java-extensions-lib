@@ -17,15 +17,16 @@ package nl.knaw.dans.lib.ocflext.layerstore;
 
 import io.dropwizard.testing.junit5.DAOTestExtension;
 import io.dropwizard.testing.junit5.DropwizardExtensionsSupport;
-import io.ocfl.core.storage.common.Listing;
 import nl.knaw.dans.lib.ocflext.AbstractTestWithTestDir;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import static nl.knaw.dans.lib.ocflext.layerstore.Item.Type;
+
 @ExtendWith(DropwizardExtensionsSupport.class)
 public abstract class LayerDatabaseFixture extends AbstractTestWithTestDir {
     protected final DAOTestExtension daoTestExtension = DAOTestExtension.newBuilder()
-        .addEntityClass(nl.knaw.dans.lib.ocflext.layerstore.ListingRecord2.class)
+        .addEntityClass(ItemRecord.class)
         .build();
     protected LayerDatabase dao;
 
@@ -35,11 +36,15 @@ public abstract class LayerDatabaseFixture extends AbstractTestWithTestDir {
         dao = new LayerDatabaseImpl(daoTestExtension.getSessionFactory());
     }
 
-    protected void saveDbRow(Long layerId, String path, Listing.Type type) {
-        var details = ListingRecord2.builder()
-            .layerId(layerId)
-            .path(path)
-            .type(type);
-        dao.saveRecords(details.build());
+    protected ItemRecord addToDb(Long layerId, String path, Type type) {
+        return daoTestExtension.inTransaction(() -> {
+            var record = ItemRecord.builder()
+                .layerId(layerId)
+                .path(path)
+                .type(type)
+                .build();
+            dao.saveRecords(record);
+            return record;
+        });
     }
 }

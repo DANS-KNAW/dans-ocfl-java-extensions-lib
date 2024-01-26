@@ -15,12 +15,12 @@
  */
 package nl.knaw.dans.lib.ocflext.layerstore;
 
-import io.ocfl.core.storage.common.Listing;
 import org.junit.jupiter.api.Test;
 
+import static nl.knaw.dans.lib.ocflext.layerstore.Item.Type;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-public class LayerDatabaseImplSaveRecordsTest extends LayerDatabaseFixture {
+public class LayerDatabaseSaveRecordsTest extends LayerDatabaseFixture {
 
     @Test
     public void should_accept_empty_list() {
@@ -30,12 +30,12 @@ public class LayerDatabaseImplSaveRecordsTest extends LayerDatabaseFixture {
 
     @Test
     public void should_accept_one_record() {
-        var record = ListingRecord2.builder()
+        var record = ItemRecord.builder()
             .layerId(1L)
             .path("path")
-            .type(Listing.Type.Directory)
+            .type(Type.Directory)
             .build();
-        dao.saveRecords(record);
+        daoTestExtension.inTransaction(() -> dao.saveRecords(record));
         assertThat(dao.getAllRecords())
             .usingRecursiveFieldByFieldElementComparatorIgnoringFields("generatedId")
             .containsExactlyInAnyOrder(record);
@@ -43,17 +43,17 @@ public class LayerDatabaseImplSaveRecordsTest extends LayerDatabaseFixture {
 
     @Test
     public void should_accept_two_records() {
-        var record1 = ListingRecord2.builder()
+        var record1 = ItemRecord.builder()
             .layerId(1L)
             .path("path1")
-            .type(Listing.Type.Directory)
+            .type(Type.Directory)
             .build();
-        var record2 = ListingRecord2.builder()
+        var record2 = ItemRecord.builder()
             .layerId(2L)
             .path("path2")
-            .type(Listing.Type.Directory)
+            .type(Type.Directory)
             .build();
-        dao.saveRecords(record1, record2);
+        daoTestExtension.inTransaction(() -> dao.saveRecords(record1, record2));
         assertThat(dao.getAllRecords())
             .usingRecursiveFieldByFieldElementComparatorIgnoringFields("generatedId")
             .containsExactlyInAnyOrder(record1, record2);

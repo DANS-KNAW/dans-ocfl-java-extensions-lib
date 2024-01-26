@@ -30,7 +30,7 @@ public interface LayerDatabase {
      *
      * @param records the records to save
      */
-    void saveRecords(ListingRecord2... records);
+    void saveRecords(ItemRecord... records);
 
     /**
      * Deletes the records with the given ids.
@@ -44,7 +44,7 @@ public interface LayerDatabase {
      *
      * @return a list of all the records in the database
      */
-    Stream<ListingRecord2> getAllRecords();
+    Stream<ItemRecord> getAllRecords();
 
 
     /**
@@ -53,7 +53,7 @@ public interface LayerDatabase {
      * @param directoryPath the directory path relative to the storage root
      * @return the items in the directory
      */
-    List<ListingRecord2> listDirectory(String directoryPath) throws IOException;
+    List<Item> listDirectory(String directoryPath) throws IOException;
 
     /**
      * Lists the items in <code>directoryPath</code> recursively. It takes into account the complete stack of layers.
@@ -61,7 +61,7 @@ public interface LayerDatabase {
      * @param directoryPath the directory path relative to the storage root
      * @return the items in the directory and its subdirectories
      */
-    List<ListingRecord2> listRecursive(String directoryPath) throws IOException;
+    List<Item> listRecursive(String directoryPath) throws IOException;
 
     /**
      * Adds a directory to the database. Ancestor directories are added automatically, if they do not exist in the same layer yet.
@@ -70,7 +70,7 @@ public interface LayerDatabase {
      * @param path    the path of the directory relative to the storage root
      * @return the records that were added to the database for directories that did not exist yet
      */
-    List<ListingRecord2> addDirectory(String path);
+    List<ItemRecord> addDirectory(String path);
 
     /**
      * Finds all the layers that contain the given path.
@@ -86,7 +86,7 @@ public interface LayerDatabase {
      * @param path path relative to the root of the storage
      * @return the records for the given path
      */
-    List<ListingRecord2> getRecordsByPath(String path);
+    List<ItemRecord> getRecordsByPath(String path);
 
 
     /**
