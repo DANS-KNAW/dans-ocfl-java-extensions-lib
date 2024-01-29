@@ -17,6 +17,7 @@ package nl.knaw.dans.lib.ocflext;
 
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
+import nl.knaw.dans.layerstore.Filter;
 
 import java.nio.file.Files;
 import java.nio.file.Path;

@@ -17,14 +17,19 @@ package nl.knaw.dans.lib.ocflext;
 
 import io.dropwizard.testing.junit5.DAOTestExtension;
 import io.dropwizard.testing.junit5.DropwizardExtensionsSupport;
-import io.ocfl.core.storage.common.Listing;
+import nl.knaw.dans.layerstore.ItemRecord;
+import nl.knaw.dans.layerstore.ItemStore;
+import nl.knaw.dans.layerstore.LayerDatabase;
+import nl.knaw.dans.layerstore.LayerDatabaseImpl;
+import nl.knaw.dans.layerstore.LayerManager;
+import nl.knaw.dans.layerstore.LayeredItemStore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(DropwizardExtensionsSupport.class)
 public abstract class LayerDatabaseFixture extends AbstractTestWithTestDir {
     protected final DAOTestExtension daoTestExtension = DAOTestExtension.newBuilder()
-        .addEntityClass(ListingRecord.class)
+        .addEntityClass(ItemRecord.class)
         .build();
     protected LayerDatabase dao;
 
@@ -34,20 +39,8 @@ public abstract class LayerDatabaseFixture extends AbstractTestWithTestDir {
         dao = new LayerDatabaseImpl(daoTestExtension.getSessionFactory());
     }
 
-    protected void saveDbRow(Long layerId, String path, Listing.Type type) {
-        var details = ListingRecord.builder()
-            .layerId(layerId)
-            .path(path)
-            .type(type);
-        dao.save(details.build());
-    }
-
     protected LayeredStorage createLayeredStorage(LayerManager layerManager) {
-        return LayeredStorage.builder()
-            .layerManager(layerManager)
-            .layerDatabase(dao)
-            .databaseBackedFilesFilter(new InventoryFilter())
-            .build();
-
+        ItemStore itemStore = new LayeredItemStore(dao, layerManager);
+        return new LayeredStorage(itemStore);
     }
 }

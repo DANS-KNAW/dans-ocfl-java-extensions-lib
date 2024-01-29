@@ -24,6 +24,7 @@ import io.ocfl.core.extension.storage.layout.config.NTupleOmitPrefixStorageLayou
 import io.ocfl.core.storage.common.Storage;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import nl.knaw.dans.layerstore.LayerManagerImpl;
 import org.apache.commons.compress.archivers.tar.TarFile;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;

@@ -50,6 +50,11 @@
             <artifactId>dropwizard-hibernate</artifactId>
         </dependency>
         <dependency>
+            <groupId>nl.knaw.dans</groupId>
+            <artifactId>dans-layer-store-lib</artifactId>
+            <version>0.1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
         </dependency>

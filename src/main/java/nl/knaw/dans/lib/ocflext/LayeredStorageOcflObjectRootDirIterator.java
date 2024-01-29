@@ -16,9 +16,10 @@
 package nl.knaw.dans.lib.ocflext;
 
 import io.ocfl.api.exception.OcflIOException;
-import io.ocfl.core.storage.common.Listing;
 import io.ocfl.core.storage.common.OcflObjectRootDirIterator;
 import lombok.AllArgsConstructor;
+import nl.knaw.dans.layerstore.Item;
+import nl.knaw.dans.layerstore.ItemStore;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -28,11 +29,11 @@ import static io.ocfl.api.OcflConstants.OBJECT_NAMASTE_PREFIX;
 
 @AllArgsConstructor
 public class LayeredStorageOcflObjectRootDirIterator extends OcflObjectRootDirIterator {
-    private final LayerDatabase database;
+    private final ItemStore itemStore;
 
     @Override
     protected boolean isObjectRoot(String path) {
-        return database.hasPathLike(path + "/" + OBJECT_NAMASTE_PREFIX + "%");
+        return itemStore.existsPathLike(path + "/" + OBJECT_NAMASTE_PREFIX + "%");
     }
 
     @Override
@@ -45,14 +46,13 @@ public class LayeredStorageOcflObjectRootDirIterator extends OcflObjectRootDirIt
 
         LayeredStorageDirectory(String path) {
             try {
-                var listingRecords = database.listDirectory(path);
-                List<String> childDirectories = listingRecords.stream()
-                    .filter(listingRecord -> listingRecord.getType() == Listing.Type.Directory)
-                    .map(ListingRecord::getPath)
+                var items = itemStore.listDirectory(path);
+                List<String> childDirectories = items.stream()
+                    .filter(item -> item.getType() == Item.Type.Directory)
+                    .map(Item::getPath)
                     .toList();
                 childDirectoryIterator = childDirectories.iterator();
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 throw OcflIOException.from(e);
             }
         }
