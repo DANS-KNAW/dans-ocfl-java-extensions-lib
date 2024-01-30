@@ -27,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 import nl.knaw.dans.layerstore.LayerManagerImpl;
 import org.apache.commons.compress.archivers.tar.TarFile;
 import org.apache.commons.io.FileUtils;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -34,6 +35,8 @@ import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -45,8 +48,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class RoundTripTest extends LayerDatabaseFixture {
     private final Path inputBaseDir = Path.of("src/test/resources/input-roundtrip");
 
+
+    private boolean rocflOnPath() {
+        return Arrays.stream(System.getenv("PATH").split(":"))
+            .anyMatch(path -> Files.exists(Paths.get(path, "rocfl")));
+    }
+
+
     @Test
     public void create_repo_with_object_versions_in_multiple_layers() throws Exception {
+        Assumptions.assumeTrue(rocflOnPath());
         var inputDir = inputBaseDir.resolve("multi-layer");
         var layerManager = new LayerManagerImpl(stagingDir, archiveDir, new DirectExecutorService());
         var storage = createLayeredStorage(layerManager);
