@@ -17,6 +17,11 @@ package nl.knaw.dans.lib.ocflext;
 
 import io.dropwizard.testing.junit5.DAOTestExtension;
 import io.dropwizard.testing.junit5.DropwizardExtensionsSupport;
+import io.ocfl.api.model.User;
+import io.ocfl.api.model.VersionInfo;
+import io.ocfl.core.OcflRepositoryBuilder;
+import io.ocfl.core.extension.OcflExtensionConfig;
+import io.ocfl.core.storage.common.Storage;
 import nl.knaw.dans.layerstore.ItemRecord;
 import nl.knaw.dans.layerstore.ItemStore;
 import nl.knaw.dans.layerstore.LayerDatabase;
@@ -25,6 +30,9 @@ import nl.knaw.dans.layerstore.LayerManager;
 import nl.knaw.dans.layerstore.LayeredItemStore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
+
+import java.io.IOException;
+import java.nio.file.Files;
 
 @ExtendWith(DropwizardExtensionsSupport.class)
 public abstract class LayerDatabaseFixture extends AbstractTestWithTestDir {
@@ -42,5 +50,22 @@ public abstract class LayerDatabaseFixture extends AbstractTestWithTestDir {
     protected LayeredStorage createLayeredStorage(LayerManager layerManager) {
         ItemStore itemStore = new LayeredItemStore(dao, layerManager);
         return new LayeredStorage(itemStore);
+    }
+
+    protected VersionInfo createVersionInfo(String message) {
+        return new VersionInfo()
+            .setMessage(message)
+            .setUser(new User()
+                .setName("test-user")
+                .setAddress("mailto:somebody@dans.knaw.nl")
+            );
+    }
+
+    protected OcflRepositoryBuilder createRepoBuilder(Storage storage, OcflExtensionConfig layoutConfig) throws IOException {
+        return new OcflRepositoryBuilder()
+            .defaultLayoutConfig(layoutConfig)
+            .inventoryCache(null)
+            .storage(ocflStorageBuilder -> ocflStorageBuilder.storage(storage))
+            .workDir(Files.createDirectories(testDir.resolve("ocfl-work")));
     }
 }
