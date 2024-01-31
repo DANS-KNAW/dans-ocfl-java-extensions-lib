@@ -74,6 +74,20 @@ public class RoundTripTest extends LayerDatabaseFixture {
         assertThat(repoValid(outDir)).isTrue();
     }
 
+    @Test
+    public void create_version_series_with_larger_files_additions_renames_and_deletions() throws Exception {
+        var series = "series002";
+        Assumptions.assumeTrue(rocflOnPath());
+        putObject(series, "01", "002");
+        layerManager.newTopLayer();
+        putObject(series, "02", "002");
+        putObject(series, "03", "002");
+        layerManager.newTopLayer();
+        var outDir = Files.createDirectories(testDir.resolve("out"));
+        TestUtil.extractZipFilesInOrder(archiveDir, outDir);
+        assertThat(repoValid(outDir)).isTrue();
+    }
+
     @SneakyThrows
     private boolean repoValid(Path storageRoot) {
         var process = Runtime.getRuntime().exec(String.format("rocfl -r %s validate", storageRoot));
