@@ -15,31 +15,29 @@
  */
 package nl.knaw.dans.lib.ocflext;
 
-import lombok.AllArgsConstructor;
-import lombok.SneakyThrows;
 import nl.knaw.dans.layerstore.Filter;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Objects;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
-import static io.ocfl.api.OcflConstants.OBJECT_NAMASTE_PREFIX;
-
-@AllArgsConstructor
-public class InventoryFilter implements Filter<Path> {
+/**
+ * Filter that selects inventory.json and sidecar files, but not those in the content directory, as it is theoretically possible to have inventory.json and sidecar files as part of the payload.
+ */
+public class InventoryFilter implements Filter<String> {
+    // inventory.json.* is a sidecar file
+    private final Pattern sidecarPattern = Pattern.compile("^inventory.json\\..+$");
 
     @Override
-    public boolean accept(Path path) {
-        return (isOcflObjectRoot(path.getParent())) && path.getFileName().toString().equals("inventory.json"); // TODO: also accept inventory.json.sha512 etc
+    public boolean accept(String s) {
+        var path = Path.of(s);
+        return (path.getFileName().toString().equals("inventory.json") || sidecarPattern.matcher(path.getFileName().toString()).matches())
+            && !hasContentDirAncestor(path);
     }
 
-    @SneakyThrows
-    private boolean isOcflObjectRoot(Path path) {
-        try (var objectMarkers = Files.newDirectoryStream(path, InventoryFilter::isNamaste)) {
-            return objectMarkers.iterator().hasNext();
-        }
-    }
-
-    private static boolean isNamaste(Path p) {
-        return p.getFileName().toString().startsWith(OBJECT_NAMASTE_PREFIX);
+    private boolean hasContentDirAncestor(Path path) {
+        return Stream.iterate(path.getParent(), Objects::nonNull, Path::getParent)
+            .anyMatch(parent -> parent.getFileName().toString().equals("content"));
     }
 }
