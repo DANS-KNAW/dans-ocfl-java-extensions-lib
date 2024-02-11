@@ -48,7 +48,7 @@ public abstract class LayerDatabaseFixture extends AbstractTestWithTestDir {
     }
 
     protected LayeredStorage createLayeredStorage(LayerManager layerManager) {
-        ItemStore itemStore = new LayeredItemStore(dao, layerManager, new InventoryFilter());
+        ItemStore itemStore = new LayeredItemStore(dao, layerManager, new StoreInventoryDbBackedContentManager());
         return new LayeredStorage(itemStore);
     }
 
