@@ -52,7 +52,7 @@
         <dependency>
             <groupId>nl.knaw.dans</groupId>
             <artifactId>dans-layer-store-lib</artifactId>
-            <version>0.1.0-SNAPSHOT</version>
+            <version>0.1.0</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>

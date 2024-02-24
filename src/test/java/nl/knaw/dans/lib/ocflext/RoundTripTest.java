@@ -22,6 +22,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import nl.knaw.dans.layerstore.LayerManager;
 import nl.knaw.dans.layerstore.LayerManagerImpl;
+import nl.knaw.dans.layerstore.ZipArchiveProvider;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,7 +45,7 @@ public class RoundTripTest extends LayerDatabaseFixture {
     @BeforeEach
     public void setUp() throws Exception {
         super.setUp();
-        layerManager = new LayerManagerImpl(stagingDir, archiveDir, new DirectExecutorService());
+        layerManager = new LayerManagerImpl(stagingDir, new ZipArchiveProvider(archiveDir), new DirectExecutorService());
         repo = createRepoBuilder(createLayeredStorage(layerManager), new NTupleOmitPrefixStorageLayoutConfig().setDelimiter(":").setTupleSize(3)).build();
     }
 
