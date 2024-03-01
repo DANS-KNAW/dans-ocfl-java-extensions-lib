@@ -21,12 +21,13 @@
     <parent>
         <groupId>nl.knaw.dans</groupId>
         <artifactId>dd-parent</artifactId>
-        <version>0.26.0</version>
+        <version>1.2.0</version>
         <relativePath />
     </parent>
     <artifactId>dans-ocfl-java-extensions-lib</artifactId>
     <version>0.1.1-SNAPSHOT</version>
-    <name>DANS Extensions for the ocfl-java library</name>
+    <name>DANS OCFL Java Extensions Library</name>
+    <description>DANS Extensions for the ocfl-java library</description>
     <inceptionYear>2023</inceptionYear>
     <scm>
         <tag>HEAD</tag>
@@ -36,12 +37,10 @@
         <dependency>
             <groupId>io.ocfl</groupId>
             <artifactId>ocfl-java-api</artifactId>
-            <version>2.0.0</version>
         </dependency>
         <dependency>
             <groupId>io.ocfl</groupId>
             <artifactId>ocfl-java-core</artifactId>
-            <version>2.0.0</version>
         </dependency>
         <!-- Todo: can we do without this dependency on dropwizard? -->
         <dependency>
@@ -51,7 +50,7 @@
         <dependency>
             <groupId>nl.knaw.dans</groupId>
             <artifactId>dans-layer-store-lib</artifactId>
-            <version>0.1.0</version>
+            <version>0.1.1-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
