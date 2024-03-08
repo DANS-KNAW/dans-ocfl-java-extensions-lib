@@ -50,7 +50,7 @@
         <dependency>
             <groupId>nl.knaw.dans</groupId>
             <artifactId>dans-layer-store-lib</artifactId>
-            <version>0.1.1-SNAPSHOT</version>
+            <version>0.2.0</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
