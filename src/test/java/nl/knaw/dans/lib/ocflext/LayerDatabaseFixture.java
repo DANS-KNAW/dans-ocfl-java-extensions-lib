@@ -28,6 +28,7 @@ import nl.knaw.dans.layerstore.LayerDatabase;
 import nl.knaw.dans.layerstore.LayerDatabaseImpl;
 import nl.knaw.dans.layerstore.LayerManager;
 import nl.knaw.dans.layerstore.LayeredItemStore;
+import nl.knaw.dans.lib.util.PersistenceProviderImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -44,7 +45,7 @@ public abstract class LayerDatabaseFixture extends AbstractTestWithTestDir {
     @BeforeEach
     public void setUp() throws Exception {
         super.setUp();
-        dao = new LayerDatabaseImpl(daoTestExtension.getSessionFactory());
+        dao = new LayerDatabaseImpl(new PersistenceProviderImpl(daoTestExtension.getSessionFactory()));
     }
 
     protected LayeredStorage createLayeredStorage(LayerManager layerManager) {
