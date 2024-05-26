@@ -40,16 +40,16 @@ public abstract class LayerDatabaseFixture extends AbstractTestWithTestDir {
     protected final DAOTestExtension daoTestExtension = DAOTestExtension.newBuilder()
         .addEntityClass(ItemRecord.class)
         .build();
-    protected LayerDatabase dao;
+    protected LayerDatabase db;
 
     @BeforeEach
     public void setUp() throws Exception {
         super.setUp();
-        dao = new LayerDatabaseImpl(new PersistenceProviderImpl(daoTestExtension.getSessionFactory()));
+        db = new LayerDatabaseImpl(new PersistenceProviderImpl<>(daoTestExtension.getSessionFactory(), ItemRecord.class));
     }
 
     protected LayeredStorage createLayeredStorage(LayerManager layerManager) {
-        ItemStore itemStore = new LayeredItemStore(dao, layerManager, new StoreInventoryDbBackedContentManager());
+        ItemStore itemStore = new LayeredItemStore(db, layerManager, new StoreInventoryDbBackedContentManager());
         return new LayeredStorage(itemStore);
     }
 
