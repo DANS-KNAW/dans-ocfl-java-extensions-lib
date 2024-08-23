@@ -21,7 +21,7 @@
     <parent>
         <groupId>nl.knaw.dans</groupId>
         <artifactId>dd-parent</artifactId>
-        <version>1.5.1</version>
+        <version>1.9.0</version>
         <relativePath />
     </parent>
     <artifactId>dans-ocfl-java-extensions-lib</artifactId>
@@ -33,10 +33,6 @@
         <tag>HEAD</tag>
         <developerConnection>scm:git:ssh://github.com/DANS-KNAW/${project.artifactId}</developerConnection>
     </scm>
-    <properties>
-        <dans-layer-store-lib.version>0.4.0</dans-layer-store-lib.version>
-        <dans-java-utils.version>0.14.0</dans-java-utils.version>
-    </properties>
     <dependencies>
         <dependency>
             <groupId>io.ocfl</groupId>
@@ -124,7 +120,6 @@
         <dependency>
             <groupId>nl.knaw.dans</groupId>
             <artifactId>dans-java-utils</artifactId>
-            <version>${dans-java-utils.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
