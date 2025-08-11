@@ -28,8 +28,9 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /**
- * Content manager that selects inventory and sidecar files for storage in the database, but not those in the content directory, as it is theoretically possible to have inventory and sidecar files as
- * part of the payload. It also compresses and decompresses the content of the inventory files, as these are likely to grow large. The sidecar files are not compressed.
+ * Content manager that selects inventory and sidecar files as well as files in extension directories for storage in the database, but not those in the content directory, as it is theoretically
+ * possible to have inventory and sidecar files as part of the payload. It also compresses and decompresses the content of the inventory files, as these are likely to grow large. The sidecar files
+ * are not compressed.
  */
 public class StoreInventoryDbBackedContentManager implements DatabaseBackedContentManager {
     // inventory.json.* is a sidecar file
@@ -38,7 +39,7 @@ public class StoreInventoryDbBackedContentManager implements DatabaseBackedConte
     @Override
     public boolean test(String s) {
         var path = Path.of(s);
-        return isInventoryJson(path) || isSidecar(path);
+        return isInventoryJson(path) || isSidecar(path) || isFileInExtensionsDir(path);
     }
 
     private boolean isInventoryJson(Path path) {
@@ -52,6 +53,11 @@ public class StoreInventoryDbBackedContentManager implements DatabaseBackedConte
     private boolean isOutsideContentDirectory(Path path) {
         return Stream.iterate(path.getParent(), Objects::nonNull, Path::getParent)
             .noneMatch(parent -> parent.getFileName().toString().equals("content"));
+    }
+
+    private boolean isFileInExtensionsDir(Path path) {
+        return isOutsideContentDirectory(path) && Stream.iterate(path.getParent(), Objects::nonNull, Path::getParent)
+            .anyMatch(parent -> parent.getFileName().toString().equals("extensions"));
     }
 
     @Override
