@@ -48,8 +48,9 @@ public abstract class LayerDatabaseFixture extends AbstractTestWithTestDir {
         db = new LayerDatabaseImpl(new PersistenceProviderImpl<>(daoTestExtension.getSessionFactory(), ItemRecord.class));
     }
 
-    protected LayeredStorage createLayeredStorage(LayerManager layerManager) {
+    protected LayeredStorage createLayeredStorage(LayerManager layerManager) throws Exception {
         ItemStore itemStore = new LayeredItemStore(db, layerManager, new StoreInventoryDbBackedContentManager());
+        layerManager.newTopLayer();
         return new LayeredStorage(itemStore);
     }
 

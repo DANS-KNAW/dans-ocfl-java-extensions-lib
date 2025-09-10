@@ -20,6 +20,7 @@ import io.ocfl.api.OcflRepository;
 import io.ocfl.core.extension.storage.layout.config.NTupleOmitPrefixStorageLayoutConfig;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import nl.knaw.dans.layerstore.DirectLayerArchiver;
 import nl.knaw.dans.layerstore.LayerManager;
 import nl.knaw.dans.layerstore.LayerManagerImpl;
 import nl.knaw.dans.layerstore.ZipArchiveProvider;
@@ -45,7 +46,7 @@ public class RoundTripTest extends LayerDatabaseFixture {
     @BeforeEach
     public void setUp() throws Exception {
         super.setUp();
-        layerManager = new LayerManagerImpl(stagingDir, new ZipArchiveProvider(archiveDir), new DirectExecutorService());
+        layerManager = new LayerManagerImpl(stagingDir, new ZipArchiveProvider(archiveDir), new DirectLayerArchiver());
         repo = createRepoBuilder(createLayeredStorage(layerManager), new NTupleOmitPrefixStorageLayoutConfig().setDelimiter(":").setTupleSize(3)).build();
     }
 
