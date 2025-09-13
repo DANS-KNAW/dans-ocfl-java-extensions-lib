@@ -25,12 +25,12 @@
         <relativePath />
     </parent>
     <artifactId>dans-ocfl-java-extensions-lib</artifactId>
-    <version>0.9.1-SNAPSHOT</version>
+    <version>0.10.0</version>
     <name>DANS OCFL Java Extensions Library</name>
     <description>DANS Extensions for the ocfl-java library</description>
     <inceptionYear>2023</inceptionYear>
     <scm>
-        <tag>HEAD</tag>
+        <tag>v0.10.0</tag>
         <developerConnection>scm:git:ssh://github.com/DANS-KNAW/${project.artifactId}</developerConnection>
     </scm>
     <properties>
