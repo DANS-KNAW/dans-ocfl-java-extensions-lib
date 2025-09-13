@@ -23,14 +23,10 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Objects;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 /**
- * Content manager that selects inventory and sidecar files as well as files in extension directories for storage in the database, but not those in the content directory, as it is theoretically
- * possible to have inventory and sidecar files as part of the payload. It also compresses and decompresses the content of the inventory files, as these are likely to grow large. The sidecar files
- * are not compressed.
+ * A {@link DatabaseBackedContentManager} that selects
  */
 public class StoreInventoryDbBackedContentManager implements DatabaseBackedContentManager {
     // inventory.json.* is a sidecar file
@@ -39,25 +35,37 @@ public class StoreInventoryDbBackedContentManager implements DatabaseBackedConte
     @Override
     public boolean test(String s) {
         var path = Path.of(s);
-        return isInventoryJson(path) || isSidecar(path) || isFileInExtensionsDir(path);
+        return !isInsideOcflObjectVersionContentDirectory(path) && !isInMutableHead(path);
     }
 
-    private boolean isInventoryJson(Path path) {
-        return path.getFileName().toString().equals("inventory.json") && isOutsideContentDirectory(path);
+    private boolean isInMutableHead(Path path) {
+        Path extensionsDir = findTopmostParentNamed(path, "extensions");
+        if (extensionsDir == null) {
+            return false;
+        }
+        return path.startsWith(extensionsDir.resolve("mutable-head"));
     }
 
     private boolean isSidecar(Path path) {
-        return sidecarPattern.matcher(path.getFileName().toString()).matches() && isOutsideContentDirectory(path);
+        return sidecarPattern.matcher(path.getFileName().toString()).matches() && isInsideOcflObjectVersionContentDirectory(path);
     }
 
-    private boolean isOutsideContentDirectory(Path path) {
-        return Stream.iterate(path.getParent(), Objects::nonNull, Path::getParent)
-            .noneMatch(parent -> parent.getFileName().toString().equals("content"));
+    private boolean isInsideOcflObjectVersionContentDirectory(Path path) {
+        Path contentDir = findTopmostParentNamed(path, "content");
+        if (contentDir == null) {
+            return false;
+        }
+        return findTopmostParentNamed(contentDir, "extensions") == null;
     }
 
-    private boolean isFileInExtensionsDir(Path path) {
-        return isOutsideContentDirectory(path) && Stream.iterate(path.getParent(), Objects::nonNull, Path::getParent)
-            .anyMatch(parent -> parent.getFileName().toString().equals("extensions"));
+    private Path findTopmostParentNamed(Path path, String name) {
+        Path result = null;
+        for (Path p = path; p != null; p = p.getParent()) {
+            if (p.getFileName() != null && p.getFileName().toString().equals(name)) {
+                result = p;
+            }
+        }
+        return result;
     }
 
     @Override
