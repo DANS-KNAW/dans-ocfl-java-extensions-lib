@@ -242,4 +242,9 @@ public class LayeredStorage implements Storage {
             }
         }
     }
+
+    @Override
+    public void close() {
+        // nothing to close
+    }
 }
