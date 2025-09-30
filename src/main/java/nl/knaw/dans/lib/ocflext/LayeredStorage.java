@@ -19,9 +19,11 @@ import io.ocfl.api.OcflFileRetriever;
 import io.ocfl.api.exception.OcflIOException;
 import io.ocfl.api.io.FixityCheckInputStream;
 import io.ocfl.api.model.DigestAlgorithm;
+import io.ocfl.core.storage.cloud.CloudOcflFileRetriever;
 import io.ocfl.core.storage.common.Listing;
 import io.ocfl.core.storage.common.OcflObjectRootDirIterator;
 import io.ocfl.core.storage.common.Storage;
+import io.ocfl.core.storage.filesystem.FileSystemOcflFileRetriever;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.knaw.dans.layerstore.Item;
@@ -114,7 +116,7 @@ public class LayeredStorage implements Storage {
 
     @Override
     public OcflFileRetriever readLazy(String filePath, DigestAlgorithm algorithm, String digest) {
-        return () -> new FixityCheckInputStream(read(filePath), algorithm, digest);
+        return new FileSystemOcflFileRetriever(Path.of(filePath), algorithm, digest);
     }
 
     @Override
