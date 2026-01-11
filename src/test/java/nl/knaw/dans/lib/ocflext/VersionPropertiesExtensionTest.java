@@ -19,9 +19,12 @@ import io.ocfl.api.model.ValidationCode;
 import io.ocfl.core.extension.ValidationContext;
 import io.ocfl.core.storage.common.Listing;
 import io.ocfl.core.storage.common.Storage;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -41,12 +44,17 @@ public class VersionPropertiesExtensionTest {
             {
             "v1": {},
             "v2": {"key": "value"}}""";
+        var sidecarPath = "extensions/object-version-properties/object_version_properties.json.sha256";
+        var filePath = "extensions/object-version-properties/object_version_properties.json";
+        var sidecarContent = DigestUtils.sha256Hex(json);
 
         when(context.getStorage()).thenReturn(storage);
         when(context.getExtensionPath()).thenReturn("extensions/object-version-properties");
         when(context.getObjectRootPath()).thenReturn("");
         when(storage.fileExists(any())).thenReturn(true);
-        when(storage.readToString(any())).thenReturn(json);
+        when(storage.readToString(filePath)).thenReturn(json);
+        when(storage.readToString(sidecarPath)).thenReturn(sidecarContent);
+        when(storage.read(filePath)).thenReturn(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)));
         when(storage.listDirectory("")).thenReturn(List.of(
             Listing.directory("v1"),
             Listing.directory("v2")
@@ -54,7 +62,32 @@ public class VersionPropertiesExtensionTest {
 
         extension.validate(context);
 
-        verify(context, Mockito.never()).addIssue(any(), any(), any());
+        verify(context, Mockito.never()).addIssue(any(), any());
+    }
+
+    @Test
+    public void validate_should_report_error_when_sidecar_checksum_is_incorrect() {
+        var extension = new VersionPropertiesExtension();
+        var context = Mockito.mock(ValidationContext.class);
+        var storage = Mockito.mock(Storage.class);
+        var json = "{\"v1\": {}}";
+        var filePath = "extensions/object-version-properties/object_version_properties.json";
+        var sidecarPath = "extensions/object-version-properties/object_version_properties.json.sha256";
+        var sidecarContent = "incorrect-checksum";
+
+        when(context.getStorage()).thenReturn(storage);
+        when(context.getExtensionPath()).thenReturn("extensions/object-version-properties");
+        when(context.getObjectRootPath()).thenReturn("");
+        when(storage.fileExists(filePath)).thenReturn(true);
+        when(storage.fileExists(sidecarPath)).thenReturn(true);
+        when(storage.readToString(filePath)).thenReturn(json);
+        when(storage.readToString(sidecarPath)).thenReturn(sidecarContent);
+        when(storage.read(filePath)).thenReturn(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)));
+        when(storage.listDirectory("")).thenReturn(List.of(Listing.directory("v1")));
+
+        extension.validate(context);
+
+        verify(context).addIssue(eq(ValidationCode.EXTENSION_ERROR), contains("Sidecar file extensions/object-version-properties/object_version_properties.json.sha256 contains incorrect checksum"));
     }
 
     @Test
@@ -69,7 +102,7 @@ public class VersionPropertiesExtensionTest {
 
         extension.validate(context);
 
-        verify(context).addIssue(eq(ValidationCode.EXTENSION_ERROR), contains("missing"));
+        verify(context, Mockito.atLeastOnce()).addIssue(eq(ValidationCode.EXTENSION_ERROR), contains("missing"));
     }
 
     @Test
@@ -79,12 +112,17 @@ public class VersionPropertiesExtensionTest {
         var storage = Mockito.mock(Storage.class);
         var json = """
             {"v1": {}}""";
+        var filePath = "extensions/object-version-properties/object_version_properties.json";
+        var sidecarPath = "extensions/object-version-properties/object_version_properties.json.sha256";
+        var sidecarContent = DigestUtils.sha256Hex(json);
 
         when(context.getStorage()).thenReturn(storage);
         when(context.getExtensionPath()).thenReturn("extensions/object-version-properties");
         when(context.getObjectRootPath()).thenReturn("");
         when(storage.fileExists(any())).thenReturn(true);
-        when(storage.readToString(any())).thenReturn(json);
+        when(storage.readToString(filePath)).thenReturn(json);
+        when(storage.readToString(sidecarPath)).thenReturn(sidecarContent);
+        when(storage.read(filePath)).thenReturn(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)));
         when(storage.listDirectory("")).thenReturn(List.of(
             Listing.directory("v1"),
             Listing.directory("v2")
@@ -102,11 +140,17 @@ public class VersionPropertiesExtensionTest {
         var storage = Mockito.mock(Storage.class);
         var json = """
             {"v1": {}""";
+        var filePath = "extensions/object-version-properties/object_version_properties.json";
+        var sidecarPath = "extensions/object-version-properties/object_version_properties.json.sha256";
+        var sidecarContent = DigestUtils.sha256Hex(json);
 
         when(context.getStorage()).thenReturn(storage);
         when(context.getExtensionPath()).thenReturn("extensions/object-version-properties");
+        when(context.getObjectRootPath()).thenReturn("");
         when(storage.fileExists(any())).thenReturn(true);
-        when(storage.readToString(any())).thenReturn(json);
+        when(storage.readToString(filePath)).thenReturn(json);
+        when(storage.readToString(sidecarPath)).thenReturn(sidecarContent);
+        when(storage.read(filePath)).thenReturn(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)));
 
         extension.validate(context);
 
