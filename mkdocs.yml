@@ -22,10 +22,13 @@ repo_name: DANS-KNAW/dans-ocfl-java-extensions-lib
 repo_url: https://github.com/dans-ocfl-java-extensions-lib
 
 nav:
-  - Manual: index.md
-  - Getting started: getting-started.md
+  - Manual:
+      - Description: index.md
+      - Getting started: getting-started.md
   - JavaDocs: api.md
-  - Development: dev.md
+  - Development:
+      - Overview: dev.md
+  - Context: context.md
 
 plugins:
   - markdownextradata
