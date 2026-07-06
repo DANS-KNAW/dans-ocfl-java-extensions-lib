@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -159,7 +160,7 @@ public class LayeredStorageTest extends LayerDatabaseFixture {
 
     private static String computeSha512(String content) {
         try {
-            var digest = java.security.MessageDigest.getInstance("SHA-512");
+            var digest = MessageDigest.getInstance("SHA-512");
             var bytes = digest.digest(content.getBytes(StandardCharsets.UTF_8));
             var sb = new StringBuilder();
             for (var b : bytes) {

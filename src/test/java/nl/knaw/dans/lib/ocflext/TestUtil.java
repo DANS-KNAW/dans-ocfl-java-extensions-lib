@@ -18,6 +18,7 @@ package nl.knaw.dans.lib.ocflext;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.tar.TarFile;
+import org.apache.commons.compress.archivers.zip.ZipFile;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -84,7 +85,7 @@ public class TestUtil {
     static void extractZipFiles(List<Path> zips, Path outDir) {
         for (var zip : zips) {
             System.out.println("Extracting " + zip);
-            try (var zipFile = new org.apache.commons.compress.archivers.zip.ZipFile(zip.toFile())) {
+            try (var zipFile = new ZipFile(zip.toFile())) {
                 var entryList = Collections.list(zipFile.getEntries());
                 entryList.forEach(entry -> {
                     try {
