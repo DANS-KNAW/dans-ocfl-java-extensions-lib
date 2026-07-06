@@ -20,9 +20,7 @@ import io.ocfl.api.OcflRepository;
 import io.ocfl.core.extension.storage.layout.config.NTupleOmitPrefixStorageLayoutConfig;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import nl.knaw.dans.layerstore.DirectLayerArchiver;
-import nl.knaw.dans.layerstore.LayerManager;
-import nl.knaw.dans.layerstore.LayerManagerImpl;
+import nl.knaw.dans.layerstore.LayeredItemStore;
 import nl.knaw.dans.layerstore.ZipArchiveProvider;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,13 +39,17 @@ public class RoundTripTest extends LayerDatabaseFixture {
     private final Path inputBaseDir = Path.of("src/test/resources/input");
 
     private OcflRepository repo;
-    private LayerManager layerManager;
+    private LayeredItemStore itemStore;
 
     @BeforeEach
     public void setUp() throws Exception {
         super.setUp();
-        layerManager = new LayerManagerImpl(stagingDir, new ZipArchiveProvider(archiveDir), new DirectLayerArchiver());
-        repo = createRepoBuilder(createLayeredStorage(layerManager), new NTupleOmitPrefixStorageLayoutConfig().setDelimiter(":").setTupleSize(3)).build();
+        itemStore = new LayeredItemStore.Builder()
+            .database(db)
+            .stagingRoot(stagingDir)
+            .archiveProvider(new ZipArchiveProvider(archiveDir))
+            .build();
+        repo = createRepoBuilder(createLayeredStorage(itemStore), new NTupleOmitPrefixStorageLayoutConfig().setDelimiter(":").setTupleSize(3)).build();
     }
 
     private boolean rocflOnPath() {
@@ -64,13 +66,13 @@ public class RoundTripTest extends LayerDatabaseFixture {
         var series = "series001";
         Assumptions.assumeTrue(rocflOnPath());
         putObject(series, "01", "001");
-        layerManager.newTopLayer();
+        itemStore.newTopLayer();
         putObject(series, "02", "001");
         putObject(series, "03", "001");
-        layerManager.newTopLayer();
+        itemStore.newTopLayer();
         putObject(series, "04", "001");
         assertThat(repo.listObjectIds().toList()).containsExactly("urn:001");
-        layerManager.newTopLayer(); // Trigger archiving of the top layer
+        itemStore.newTopLayer(); // Trigger archiving of the top layer
         var outDir = Files.createDirectories(testDir.resolve("out"));
         TestUtil.extractZipFilesInOrder(archiveDir, outDir);
         assertThat(repoValid(outDir)).isTrue();
@@ -81,10 +83,10 @@ public class RoundTripTest extends LayerDatabaseFixture {
         var series = "series002";
         Assumptions.assumeTrue(rocflOnPath());
         putObject(series, "01", "002");
-        layerManager.newTopLayer();
+        itemStore.newTopLayer();
         putObject(series, "02", "002");
         putObject(series, "03", "002");
-        layerManager.newTopLayer();
+        itemStore.newTopLayer();
         var outDir = Files.createDirectories(testDir.resolve("out"));
         TestUtil.extractZipFilesInOrder(archiveDir, outDir);
         assertThat(repoValid(outDir)).isTrue();

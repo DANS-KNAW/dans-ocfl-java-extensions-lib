@@ -18,8 +18,7 @@ package nl.knaw.dans.lib.ocflext;
 import io.ocfl.api.DigestAlgorithmRegistry;
 import io.ocfl.api.exception.OcflFileAlreadyExistsException;
 import io.ocfl.api.exception.OcflNoSuchFileException;
-import nl.knaw.dans.layerstore.DirectLayerArchiver;
-import nl.knaw.dans.layerstore.LayerManagerImpl;
+import nl.knaw.dans.layerstore.LayeredItemStore;
 import nl.knaw.dans.layerstore.ZipArchiveProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,8 +38,12 @@ public class LayeredStorageTest extends LayerDatabaseFixture {
     @BeforeEach
     public void setUp() throws Exception {
         super.setUp();
-        var layerManager = new LayerManagerImpl(stagingDir, new ZipArchiveProvider(archiveDir), new DirectLayerArchiver());
-        storage = createLayeredStorage(layerManager);
+        var itemStore = new LayeredItemStore.Builder()
+            .database(db)
+            .stagingRoot(stagingDir)
+            .archiveProvider(new ZipArchiveProvider(archiveDir))
+            .build();
+        storage = createLayeredStorage(itemStore);
         storage.createDirectories("a/b");
     }
 
