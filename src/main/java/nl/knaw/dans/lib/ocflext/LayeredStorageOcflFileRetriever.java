@@ -67,7 +67,7 @@ public class LayeredStorageOcflFileRetriever implements OcflFileRetriever {
             }
             long start = startPosition == null ? 0L : startPosition;
             long length = endPosition - start + 1;
-            return new BoundedInputStream(is, length);
+            return BoundedInputStream.builder().setInputStream(is).setMaxCount(length).get();
         }
         catch (IOException e) {
             throw OcflIOException.from(e);
