@@ -16,14 +16,13 @@
 package nl.knaw.dans.lib.ocflext;
 
 import io.ocfl.api.OcflFileRetriever;
+import io.ocfl.api.exception.OcflFileAlreadyExistsException;
 import io.ocfl.api.exception.OcflIOException;
-import io.ocfl.api.io.FixityCheckInputStream;
+import io.ocfl.api.exception.OcflNoSuchFileException;
 import io.ocfl.api.model.DigestAlgorithm;
-import io.ocfl.core.storage.cloud.CloudOcflFileRetriever;
 import io.ocfl.core.storage.common.Listing;
 import io.ocfl.core.storage.common.OcflObjectRootDirIterator;
 import io.ocfl.core.storage.common.Storage;
-import io.ocfl.core.storage.filesystem.FileSystemOcflFileRetriever;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.knaw.dans.layerstore.Item;
@@ -92,6 +91,9 @@ public class LayeredStorage implements Storage {
 
     @Override
     public InputStream read(String filePath) {
+        if (!fileExists(filePath)) {
+            throw new OcflNoSuchFileException("File does not exist: " + filePath);
+        }
         try {
             return itemStore.readFile(filePath);
         }
@@ -116,11 +118,14 @@ public class LayeredStorage implements Storage {
 
     @Override
     public OcflFileRetriever readLazy(String filePath, DigestAlgorithm algorithm, String digest) {
-        return new FileSystemOcflFileRetriever(Path.of(filePath), algorithm, digest);
+        return new LayeredStorageOcflFileRetriever(itemStore, filePath, algorithm, digest);
     }
 
     @Override
     public void write(String filePath, byte[] content, String mediaType) {
+        if (fileExists(filePath)) {
+            throw new OcflFileAlreadyExistsException("File already exists: " + filePath);
+        }
         try {
             itemStore.writeFile(filePath, new ByteArrayInputStream(content));
         }
@@ -171,6 +176,9 @@ public class LayeredStorage implements Storage {
 
     @Override
     public void moveDirectoryInto(Path source, String destination) {
+        if (directoryExists(destination)) {
+            throw new OcflFileAlreadyExistsException("Directory already exists: " + destination);
+        }
         try {
             itemStore.moveDirectoryInto(source, destination);
         }
@@ -181,6 +189,12 @@ public class LayeredStorage implements Storage {
 
     @Override
     public void moveDirectoryInternal(String source, String destination) {
+        if (!directoryExists(source)) {
+            throw new OcflNoSuchFileException("Directory does not exist: " + source);
+        }
+        if (directoryExists(destination)) {
+            throw new OcflFileAlreadyExistsException("Directory already exists: " + destination);
+        }
         try {
             itemStore.moveDirectoryInternal(source, destination);
         }
@@ -218,7 +232,7 @@ public class LayeredStorage implements Storage {
     public void deleteEmptyDirsDown(String path) {
         try {
             List<Item> containedItems;
-            containedItems = itemStore.listRecursive(path);
+            containedItems = new ArrayList<>(itemStore.listRecursive(path));
             // Sort by descending path length, so that we start with the deepest directories
             containedItems.sort((i1, i2) -> Integer.compare(i2.getPath().length(), i1.getPath().length()));
             for (Item item : containedItems) {
@@ -228,6 +242,10 @@ public class LayeredStorage implements Storage {
                     }
                 }
             }
+            // The starting path itself is also eligible for deletion
+            if (directoryExists(path) && directoryIsEmpty(path)) {
+                itemStore.deleteDirectory(path);
+            }
         }
         catch (IOException e) {
             throw OcflIOException.from(e);
@@ -236,17 +254,37 @@ public class LayeredStorage implements Storage {
 
     @Override
     public void deleteEmptyDirsUp(String path) {
-        var pathParts = path.split("/");
-        for (int i = pathParts.length - 1; i >= 0; i--) {
-            var parentPath = String.join("/", pathParts).substring(0, String.join("/", pathParts).lastIndexOf("/"));
-            if (directoryIsEmpty(parentPath)) {
-                deleteDirectory(parentPath);
+        var current = path;
+        while (!current.isEmpty()) {
+            if (!directoryExists(current)) {
+                break;
             }
+            if (directoryIsEmpty(current)) {
+                deleteDirectory(current);
+            }
+            else {
+                break;
+            }
+            int lastSlash = current.lastIndexOf('/');
+            if (lastSlash < 0) {
+                break;
+            }
+            current = current.substring(0, lastSlash);
         }
     }
 
     @Override
     public void close() {
         // nothing to close
+    }
+
+    private boolean directoryExists(String path) {
+        try {
+            listDirectory(path);
+            return true;
+        }
+        catch (OcflNoSuchFileException e) {
+            return false;
+        }
     }
 }
