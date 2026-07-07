@@ -137,7 +137,7 @@ public class LayeredStorage implements Storage {
     @Override
     public void createDirectories(String path) {
         try {
-            itemStore.createDirectory(path);
+            itemStore.createDirectories(path);
         }
         catch (IOException e) {
             throw OcflIOException.from(e);
