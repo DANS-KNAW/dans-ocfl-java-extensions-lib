@@ -25,7 +25,7 @@
         <relativePath />
     </parent>
     <artifactId>dans-ocfl-java-extensions-lib</artifactId>
-    <version>3.0.0</version>
+    <version>3.0.0-SNAPSHOT</version>
     <name>DANS OCFL Java Extensions Library</name>
     <description>DANS Extensions for the ocfl-java library</description>
     <inceptionYear>2023</inceptionYear>
@@ -34,7 +34,7 @@
         <developerConnection>scm:git:ssh://github.com/DANS-KNAW/${project.artifactId}</developerConnection>
     </scm>
     <properties>
-        <dans-layer-store-lib.version>3.0.0-SNAPSHOT</dans-layer-store-lib.version>
+        <dans-layer-store-lib.version>3.0.0</dans-layer-store-lib.version>
     </properties>
     <dependencies>
         <dependency>
