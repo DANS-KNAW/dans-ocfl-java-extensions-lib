@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 #
 # Copyright (C) 2023 DANS - Data Archiving and Networked Services (info@dans.knaw.nl)
 #
@@ -13,18 +15,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+set -euo pipefail
 
-set -e
+export MAVEN_ARGS="-s .github/ci-settings.xml"
 
 echo "Delomboking first, so that getters and setters will appear in JavaDocs"
-mvn clean lombok:delombok
+mvn $MAVEN_ARGS clean lombok:delombok
 echo "Calling JavaDoc"
-mvn javadoc:javadoc
+mvn $MAVEN_ARGS javadoc:javadoc
 echo "Removing existing JavaDocs if present"
 if [ -d "docs/javadocs" ]; then rm -fr docs/javadocs; fi
 echo "Moving newly generated JavaDocs in place"
 mv target/reports/apidocs docs/javadocs
 echo "DONE build and add javadocs"
-
-
-
