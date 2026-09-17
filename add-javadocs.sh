@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 #
 # Copyright (C) 2023 DANS - Data Archiving and Networked Services (info@dans.knaw.nl)
 #
@@ -15,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
 set -euo pipefail
 
 export MAVEN_ARGS="-s .github/ci-settings.xml"
