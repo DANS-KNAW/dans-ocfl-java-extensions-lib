@@ -35,7 +35,7 @@
         <connection>scm:git:https://github.com/DANS-KNAW/dans-ocfl-java-extensions-lib</connection>
         <developerConnection>scm:git:ssh://github.com/DANS-KNAW/dans-ocfl-java-extensions-lib</developerConnection>
         <tag>HEAD</tag>
-        <url>https://github.com/DANS-KNAW/${project.artifactId}</url>
+        <url>https://github.com/DANS-KNAW/dans-ocfl-java-extensions-lib</url>
     </scm>
 
     <dependencies>
