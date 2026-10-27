@@ -59,7 +59,6 @@
         <dependency>
             <groupId>nl.datastations</groupId>
             <artifactId>dans-layer-store-lib</artifactId>
-            <version>5.0.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
