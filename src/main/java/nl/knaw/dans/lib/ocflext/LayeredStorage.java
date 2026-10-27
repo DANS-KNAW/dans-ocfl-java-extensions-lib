@@ -76,7 +76,12 @@ public class LayeredStorage implements Storage {
 
     @Override
     public boolean directoryIsEmpty(String directoryPath) {
-        return listDirectory(directoryPath).isEmpty();
+        try {
+            return itemStore.directoryIsEmpty(directoryPath);
+        }
+        catch (IOException e) {
+            throw OcflIOException.from(e);
+        }
     }
 
     @Override

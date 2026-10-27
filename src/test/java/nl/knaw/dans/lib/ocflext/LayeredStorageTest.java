@@ -148,6 +148,22 @@ public class LayeredStorageTest extends LayerDatabaseFixture {
         storage.moveDirectoryInternal("a/src", "a/moved");
     }
 
+    // --- directoryIsEmpty ---
+
+    @Test
+    public void directoryIsEmpty_returns_true_when_directory_has_no_items() {
+        assertThat(storage.directoryIsEmpty("a/b")).isTrue();
+    }
+
+    @Test
+    public void directoryIsEmpty_returns_false_when_directory_has_files() {
+        storage.write("a/b/file.txt", "data".getBytes(StandardCharsets.UTF_8), null);
+
+        assertThat(storage.directoryIsEmpty("a/b")).isFalse();
+        assertThat(storage.directoryIsEmpty("a")).isFalse();
+        assertThat(storage.directoryIsEmpty("")).isFalse();
+    }
+
     // --- deleteEmptyDirsDown ---
 
     @Test

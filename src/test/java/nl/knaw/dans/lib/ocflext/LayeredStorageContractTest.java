@@ -52,6 +52,7 @@ public class LayeredStorageContractTest {
     public void deleteEmptyDirsDown_deletes_starting_path_when_it_is_empty() throws Exception {
         when(itemStore.listRecursive("a/b")).thenReturn(Collections.emptyList());
         when(itemStore.listDirectory("a/b")).thenReturn(Collections.emptyList());
+        when(itemStore.directoryIsEmpty("a/b")).thenReturn(true);
 
         storage.deleteEmptyDirsDown("a/b");
 
@@ -62,6 +63,7 @@ public class LayeredStorageContractTest {
     public void deleteEmptyDirsDown_does_not_delete_starting_path_when_it_has_contents() throws Exception {
         when(itemStore.listRecursive("a/b")).thenReturn(Collections.emptyList());
         when(itemStore.listDirectory("a/b")).thenReturn(List.of(Item.builder().path("a/b/file.txt").type(Item.Type.File).build()));
+        when(itemStore.directoryIsEmpty("a/b")).thenReturn(false);
 
         storage.deleteEmptyDirsDown("a/b");
 
@@ -71,8 +73,9 @@ public class LayeredStorageContractTest {
     @Test
     public void deleteEmptyDirsDown_deletes_empty_subdirectory_but_not_non_empty_starting_path() throws Exception {
         when(itemStore.listRecursive("a/b")).thenReturn(List.of(Item.builder().path("a/b/empty").type(Item.Type.Directory).build()));
-        when(itemStore.listDirectory("a/b/empty")).thenReturn(Collections.emptyList());
         when(itemStore.listDirectory("a/b")).thenReturn(List.of(Item.builder().path("a/b/file.txt").type(Item.Type.File).build()));
+        when(itemStore.directoryIsEmpty("a/b/empty")).thenReturn(true);
+        when(itemStore.directoryIsEmpty("a/b")).thenReturn(false);
 
         storage.deleteEmptyDirsDown("a/b");
 
@@ -86,8 +89,11 @@ public class LayeredStorageContractTest {
     public void deleteEmptyDirsUp_deletes_starting_path_and_walks_up_to_first_non_empty_ancestor() throws Exception {
         // a/b/c is empty; a/b becomes empty after c is deleted; a becomes empty after b is deleted
         when(itemStore.listDirectory("a/b/c")).thenReturn(Collections.emptyList());
+        when(itemStore.directoryIsEmpty("a/b/c")).thenReturn(true);
         when(itemStore.listDirectory("a/b")).thenReturn(Collections.emptyList());
+        when(itemStore.directoryIsEmpty("a/b")).thenReturn(true);
         when(itemStore.listDirectory("a")).thenReturn(Collections.emptyList());
+        when(itemStore.directoryIsEmpty("a")).thenReturn(true);
 
         storage.deleteEmptyDirsUp("a/b/c");
 
@@ -99,8 +105,10 @@ public class LayeredStorageContractTest {
     @Test
     public void deleteEmptyDirsUp_stops_at_non_empty_ancestor() throws Exception {
         when(itemStore.listDirectory("a/b")).thenReturn(Collections.emptyList());
+        when(itemStore.directoryIsEmpty("a/b")).thenReturn(true);
         // "a" has "a/c" — not empty
         when(itemStore.listDirectory("a")).thenReturn(List.of(Item.builder().path("a/c").type(Item.Type.Directory).build()));
+        when(itemStore.directoryIsEmpty("a")).thenReturn(false);
 
         storage.deleteEmptyDirsUp("a/b");
 
@@ -115,5 +123,16 @@ public class LayeredStorageContractTest {
         storage.deleteEmptyDirsUp("a/b");
 
         verify(itemStore, never()).deleteDirectory("a/b");
+    }
+
+    // --- directoryIsEmpty ---
+
+    @Test
+    public void directoryIsEmpty_delegates_to_itemStore() throws Exception {
+        when(itemStore.directoryIsEmpty("a/b")).thenReturn(true);
+        org.assertj.core.api.Assertions.assertThat(storage.directoryIsEmpty("a/b")).isTrue();
+
+        when(itemStore.directoryIsEmpty("a/b")).thenReturn(false);
+        org.assertj.core.api.Assertions.assertThat(storage.directoryIsEmpty("a/b")).isFalse();
     }
 }

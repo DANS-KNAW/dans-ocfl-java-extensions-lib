@@ -2,6 +2,7 @@
 /target
 /*.iml
 /venv
+/.venv
 /site
 /data
 /.venv-mkdocs

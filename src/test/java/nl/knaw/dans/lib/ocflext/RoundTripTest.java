@@ -15,7 +15,6 @@
  */
 package nl.knaw.dans.lib.ocflext;
 
-import io.dropwizard.util.DirectExecutorService;
 import io.ocfl.api.OcflRepository;
 import io.ocfl.core.extension.storage.layout.config.NTupleOmitPrefixStorageLayoutConfig;
 import lombok.SneakyThrows;
