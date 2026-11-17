@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -91,16 +92,16 @@ public class LayeredStorage implements Storage {
 
     @Override
     public boolean fileExists(String filePath) {
-        return itemStore.existsPathLike(filePath);
+        return itemStore.existsPath(filePath);
     }
 
     @Override
     public InputStream read(String filePath) {
-        if (!fileExists(filePath)) {
-            throw new OcflNoSuchFileException("File does not exist: " + filePath);
-        }
         try {
             return itemStore.readFile(filePath);
+        }
+        catch (NoSuchFileException e) {
+            throw new OcflNoSuchFileException("File does not exist: " + filePath, e);
         }
         catch (IOException e) {
             throw OcflIOException.from(e);
